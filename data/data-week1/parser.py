@@ -1,12 +1,9 @@
 from PIL import Image
 import math
 import numpy as np
-import random
 import collections
 from matplotlib import pyplot as plt
-import cv2
-from PIL import ImageDraw
-from scipy.stats import gaussian_kde
+import sys
 
 BLACK = 0
 WHITE = 255
@@ -25,6 +22,7 @@ def extract(fname):
     return img
 
 
+# ---- USE THESE METHODS TO DRAW HISTOGRAM /begin ---- #
 # count the number of black pixel for each column
 def get_vhist(fname):
     img = extract(fname)
@@ -36,12 +34,10 @@ def get_vhist(fname):
             if img[i][j] == BLACK:
                 hist.append(i)
 
-    # bins = width
-    # plt.hist(hist, bins, [0,bins])
-    # plt.title('Vertical Histogram for ' + fname)
-    # plt.show()
-
-    return hist
+    bins = width
+    plt.hist(hist, bins, [0,bins])
+    plt.title('Vertical Histogram for ' + fname)
+    plt.show()
 
 
 # count the number of black pixel for each line
@@ -55,12 +51,101 @@ def get_hhist(fname):
             if img[i][j] == BLACK:
                 hist.append(j)
 
-    # bins = height
-    # plt.hist(hist, bins, [0,bins])
-    # plt.title('Horizontal Histogram for ' + fname)
-    # plt.show()
+    bins = height
+    plt.hist(hist, bins, [0,bins])
+    plt.title('Horizontal Histogram for ' + fname)
+    plt.show()
+# ---- USE THESE METHODS TO DRAW HISTOGRAM /end ---- #
 
-    return hist
+
+
+
+
+# ---- FEATURES EXTRACTION /begin ---- #
+# Projection Profiling
+def pp(fname):
+    img = extract(fname)
+    width, height = len(img), len(img[0])
+    pp = []
+    # for each column count the number of black pixels
+    for i in range(width):
+        sum_black = 0
+        for j in range(height):
+            if img[i][j] == BLACK:
+                sum_black += 1
+
+        pp.append(sum_black)
+
+    # normalize
+    norm_pp = normalize(pp)
+    return norm_pp
+
+
+# TODO: finish extracting the upper profile
+# Upper Profile
+def up(fname):
+    img = extract(fname)
+    width, height = len(img), len(img[0])
+    up = []
+    # for each column count the number of white pixels until 1st black pixel is encountered
+    # TODO: need to detect where the word begins and where it ends
+    for i in range(width):
+        sum_white = 0
+        j = 0
+        while img[i][j] == WHITE and j < height:
+            sum_white += 1
+
+        if sum_white == height: # no black pixel encountered => take same value as the last one introduced
+            sum_white = up[-1]
+
+        up.append(sum_white)
+
+    # normalize
+    norm_up = normalize(up)
+    return norm_up
+
+def normalize(x):
+    m = np.max(np.array(x))
+    for i in range(len(x)):
+        x[i] = float(x[i])/float(m)
+
+    return x
+# ---- FEATURES EXTRACTION /end ---- #
+
+
+
+
+
+
+# ---- DISSIMILARITY COMPUTATION /begin ---- #
+
+# Source: http://nbviewer.ipython.org/github/markdregan/K-Nearest-Neighbors-with-Dynamic-Time-Warping/blob/master/K_Nearest_Neighbor_Dynamic_Time_Warping.ipynb
+# Dynamic Time Warping
+def dtw(kw, w, d = lambda x,y: abs(x-y)):
+    # Create cost matrix via broadcasting with large int
+    kw, w = np.array(kw), np.array(w)
+    M, N = len(kw), len(w)
+    cost = sys.maxint * np.ones((M, N))
+
+    # Initialize the first row and column
+    cost[0, 0] = d(kw[0], w[0])
+    for i in xrange(1, M):
+        cost[i, 0] = cost[i-1, 0] + d(kw[i], w[0])
+
+    for j in xrange(1, N):
+        cost[0, j] = cost[0, j-1] + d(kw[0], w[j])
+
+    # Populate rest of cost matrix within window
+    for i in xrange(1, M):
+        for j in xrange(1, N):
+            choices = cost[i - 1, j - 1], cost[i, j-1], cost[i-1, j]
+            cost[i, j] = min(choices) + d(kw[i], w[j])
+
+    # Return DTW distance given window
+    return cost[-1, -1]
+# ---- DISSIMILARITY COMPUTATION /end ---- #
+
+
 
 
 
@@ -68,8 +153,21 @@ def get_hhist(fname):
 # ------------------------- M A I N -------------------------#
 
 # Keywords
-imgs = ["./WashingtonDB/keywords/O-c-t-o-b-e-r"]
+kws = ["./WashingtonDB/keywords/O-c-t-o-b-e-r", "./WashingtonDB/keywords/s-o-o-n", "./WashingtonDB/keywords/t-h-a-t"]
+# Words
+ws = ["./WashingtonDB/words/274-05-02", "./WashingtonDB/words/274-12-04", "./WashingtonDB/words/273-33-05"]
 
-for img in imgs:
-    fname = img+'.png'
-    get_hhist(fname)
+for kw in kws:
+    dissimilarity = {}
+    for w in ws:
+        keyword = kw+'.png'
+        word = w+'.png'
+        dist = dtw(pp(keyword), pp(word))
+        dissimilarity[word] = dist
+        # print keyword + "\t" + word + "\t", dist
+
+    res = sorted(dissimilarity.items(), key=lambda x:x[1])
+    # res = sorted(dissimilarity, key=dissimilarity.get)
+    print res
+        # get_hhist(fname)
+        # pp(fname)
