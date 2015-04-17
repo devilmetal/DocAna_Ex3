@@ -25,20 +25,42 @@ def extract(fname):
     return img
 
 
-def get_hist(fname):
+# count the number of black pixel for each column
+def get_vhist(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
-    vertical = []
+    hist = []
 
     for i in range(width):
         for j in range(height):
             if img[i][j] == BLACK:
-                vertical.append(i)
+                hist.append(i)
 
-    bins = width
-    plt.hist(vertical, bins, [0,bins])
-    plt.title('Histogram for ' + fname)
-    plt.show()
+    # bins = width
+    # plt.hist(hist, bins, [0,bins])
+    # plt.title('Vertical Histogram for ' + fname)
+    # plt.show()
+
+    return hist
+
+
+# count the number of black pixel for each line
+def get_hhist(fname):
+    img = extract(fname)
+    width, height = len(img), len(img[0])
+    hist = []
+
+    for j in range(height):
+        for i in range(width):
+            if img[i][j] == BLACK:
+                hist.append(j)
+
+    # bins = height
+    # plt.hist(hist, bins, [0,bins])
+    # plt.title('Horizontal Histogram for ' + fname)
+    # plt.show()
+
+    return hist
 
 
 
@@ -50,4 +72,4 @@ imgs = ["./WashingtonDB/keywords/O-c-t-o-b-e-r"]
 
 for img in imgs:
     fname = img+'.png'
-    get_hist(fname)
+    get_hhist(fname)
