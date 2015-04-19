@@ -4,6 +4,9 @@ import numpy as np
 import collections
 from matplotlib import pyplot as plt
 import sys
+import os
+import random
+import operator
 
 BLACK = 0
 WHITE = 255
@@ -118,7 +121,6 @@ def normalize(x):
 
 
 # ---- DISSIMILARITY COMPUTATION /begin ---- #
-
 # Source: http://nbviewer.ipython.org/github/markdregan/K-Nearest-Neighbors-with-Dynamic-Time-Warping/blob/master/K_Nearest_Neighbor_Dynamic_Time_Warping.ipynb
 # Dynamic Time Warping
 def dtw(kw, w, d = lambda x,y: abs(x-y)):
@@ -150,24 +152,46 @@ def dtw(kw, w, d = lambda x,y: abs(x-y)):
 
 
 
+
 # ------------------------- M A I N -------------------------#
 
 # Keywords
-kws = ["./WashingtonDB/keywords/O-c-t-o-b-e-r", "./WashingtonDB/keywords/s-o-o-n", "./WashingtonDB/keywords/t-h-a-t"]
+kws = ["O-c-t-o-b-e-r", "s-o-o-n", "t-h-a-t"]
+kws_path = "./WashingtonDB/keywords/"
 # Words
-ws = ["./WashingtonDB/words/274-05-02", "./WashingtonDB/words/274-12-04", "./WashingtonDB/words/273-33-05"]
+ws = ["274-05-02", "274-12-04", "273-33-05"]
+ws_path = "./WashingtonDB/words/"
+# Ground truth
+gt_file = "./WashingtonDB/WashingtonDB.txt"
+gt = {}
+
+# extract ground-truth in dictionnary for quick search
+with open(gt_file) as f:
+    cgt = [x.strip('\n ') for x in f.readlines()]
+f.close()
+for line in cgt:
+    key = line.split(' ', 1)[0]
+    label = line.split(' ', 1)[1]
+    # label = label.split('_', 1)[0]
+    gt[key] = label
+
+# print gt
+
 
 for kw in kws:
     dissimilarity = {}
     for w in ws:
-        keyword = kw+'.png'
-        word = w+'.png'
+        keyword = kws_path + kw + '.png'
+        word = ws_path + w + '.png'
         dist = dtw(pp(keyword), pp(word))
-        dissimilarity[word] = dist
-        # print keyword + "\t" + word + "\t", dist
+        dissimilarity[w] = dist
 
+    # ~rank list
     res = sorted(dissimilarity.items(), key=lambda x:x[1])
     # res = sorted(dissimilarity, key=dissimilarity.get)
-    print res
-        # get_hhist(fname)
-        # pp(fname)
+    tp, fn, fp, tn = 0,0,0,0 # false/true positive/negative
+    for i in res:
+        if gt[i[0]] == kw:
+            print "ok"
+        else:
+            print "not ok"
