@@ -164,7 +164,7 @@ for kw in kws:
         word = w+'.png'
         dist = dtw(pp(keyword), pp(word))
         dissimilarity[word] = dist
-        # print keyword + "\t" + word + "\t", dist
+        print keyword + "\t" + word + "\t", dist
 
     res = sorted(dissimilarity.items(), key=lambda x:x[1])
     # res = sorted(dissimilarity, key=dissimilarity.get)
