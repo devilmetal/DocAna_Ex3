@@ -240,10 +240,13 @@ for kw in kws:
     plt.show()
 
     eer_x,eer_y = 0,0
+    min_diff = 1000
     for x in fpr:
         for y in precision:
-            if x == y:
+            if abs(x-y) < min_diff:
+                min_diff = abs(x-y)
                 eer_x,eer_y = x,y
+    print "EER= " +str(eer_x)+ "," +str(eer_y)
 
     plt.xlabel('FPR')
     plt.ylabel('TPR')
