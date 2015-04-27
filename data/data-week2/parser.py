@@ -370,9 +370,10 @@ kws = ["O-c-t-o-b-e-r", "s-o-o-n", "t-h-a-t"]
 kws_path = "./WashingtonDB/keywords/"
 # Words
 ws = ["274-05-02", "274-12-04", "273-33-05"]
-ws_path = "WashingtonDB/words/"
+ws_path = "WashingtonDB/lines/"
 # Ground truth
-gt_file = "WashingtonDB/WashingtonDB.txt"
+gt_file = "WashingtonDB/LinesWashington.txt"
+
 
 # extract ground-truth in dictionnary for quick search
 with open(gt_file) as f:
@@ -386,19 +387,35 @@ for line in cgt:
 
 # print gt
 
-
+windows = 30 # 30px width for the sliding windows
 for kw in kws:
     dissimilarity = {}
     keyword = kws_path + kw + '.png'
+    kwimg = Image.open(keyword)
+    kw_size = kwimg.size
+    kw_width = kw_size[0]
     array = []
-    for w in ws:
-        word = ws_path + w + '.png'
-        dist = distance(keyword,word)
-        array.append([word,dist])
+    for path, subdirs, files in os.walk(ws_path):
+        #checking files
+        for file in files:
+            im=Image.open(ws_path+file)
+            size = im.size # (width,height) tuple
+            width = size[0]
+            for i in range(width):
+                if i % windows == 0 and i+kw_width < width:
+                    im.crop((i, 0,i+kw_width, size[1])).save(ws_path+'win'+str(i)+'_'+file)
+                    word = ws_path + file
+                    dist = distance(keyword,word)
+                    array.append([word,dist])
 
     #Sorting the array computed
     array.sort(compare)
-    print array[0]
+    print "Ten first hits for keyword "+kws+"."
+    print "=========================="
+    print " "
+    for i in range(10):
+        print array[i]
+    print " "
         #for w2 in ws:
         #    if w1!=w2:
         #        word2 = ws_path + w2 + '.png'
