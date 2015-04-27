@@ -404,7 +404,7 @@ for kw in kws:
             width = size[0]
             for i in range(width):
                 if i % windows == 0 and i+kw_width < width:
-                    crop = crop_path+'win'+str(i)+'_'+file
+                    crop = crop_path+'win'+str(i)+'_'+str(kw)+'_'+file
                     im.crop((i, 0,i+kw_width, size[1])).save(crop)
                     word = ws_path + file
                     dist = distance(keyword,crop)
@@ -412,7 +412,7 @@ for kw in kws:
     print "keyword "+str(kw)+" done."
     #Sorting the array computed
     array.sort(compare)
-    print "Ten first hits for keyword "+kws+"."
+    print "Ten first hits for keyword "+kw+"."
     print "=========================="
     print " "
     for i in range(10):
