@@ -371,6 +371,7 @@ kws_path = "./WashingtonDB/keywords/"
 # Words
 ws = ["274-05-02", "274-12-04", "273-33-05"]
 ws_path = "WashingtonDB/lines/"
+crop_path = "WashingtonDB/crops/"
 # Ground truth
 gt_file = "WashingtonDB/LinesWashington.txt"
 
@@ -403,9 +404,10 @@ for kw in kws:
             width = size[0]
             for i in range(width):
                 if i % windows == 0 and i+kw_width < width:
-                    im.crop((i, 0,i+kw_width, size[1])).save(ws_path+'win'+str(i)+'_'+file)
+                    crop = crop_path+'win'+str(i)+'_'+file
+                    im.crop((i, 0,i+kw_width, size[1])).save(crop)
                     word = ws_path + file
-                    dist = distance(keyword,word)
+                    dist = distance(keyword,crop)
                     array.append([word,dist])
     print "keyword "+str(kw)+" done."
     #Sorting the array computed
