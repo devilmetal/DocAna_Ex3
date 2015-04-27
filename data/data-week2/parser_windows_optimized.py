@@ -135,6 +135,20 @@ ws_path = "WashingtonDB/_lines/"
 crop_path = "WashingtonDB/crops/"
 # Ground truth
 gt_file = "WashingtonDB/LinesWashington.txt"
+gt = {}
+
+# extract ground-truth in dictionnary for quick search
+with open(gt_file) as f:
+    cgt = [x.strip('\n ') for x in f.readlines()]
+f.close()
+for line in cgt:
+    key = line.split(' ', 1)[0]
+    label = line.split(' ', 1)[1]
+    label = label.split('|')
+    # label = label.split('_', 1)[0]
+    gt[key] = label
+
+# print gt
 
 #PART 1 Parse all lines to obtain vector feature for each column
 features={}
@@ -193,4 +207,46 @@ for kw in kws:
         if not elem[0] in match:
             print elem
             match.append(elem[0])
+#     print " "
+    precision, recall, fpr = [],[],[]
+    for threshold in range(0,10):
+        tp,fn,fp,tn = 0,0,0,0
+        for i in range(len(match)):
+            m = match[i].split('.', 1)[0]
+            if i <= threshold:
+                seen = False
+                for word in gt[m]:
+                    if word == kw and not seen:#keyword appears on the checked line (count line only once)
+                        tp += 1
+                        seen = True
+                if not seen:#keyword is not on the checked line
+                    fp += 1
+            else:
+                seen = False
+                for word in gt[m]:
+                    if word == kw and not seen:
+                        tn += 1
+                if not seen:
+                    fn += 1
+        # TODO: handle case when divided by 0 (should not happen if we take the complete ranked list)
+        print "T" +str(threshold)+ "   precision= " + str(float(tp)/(float(tp)+float(fp))) + "   recall= " + str(float(tp)/(float(tp)+float(fn))) + "   FPR= " + str(float(fp)/(float(fp)+float(tn)))
+        precision.append(float(tp)/(float(tp)+float(fp)))
+        recall.append(float(tp)/(float(tp)+float(fn)))
+        fpr.append(float(fp)/(float(fp)+float(tn)))
+
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.plot(recall, precision, 'r')
+    plt.show()
+
+    eer_x,eer_y = 0,0
+    for x in fpr:
+        for y in precision:
+            if x == y:
+                eer_x,eer_y = x,y
+
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
+    plt.plot(fpr, precision, 'r', eer_x, eer_y, 'ko')
+    plt.show()
     print " "
