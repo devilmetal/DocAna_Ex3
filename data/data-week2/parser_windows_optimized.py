@@ -168,6 +168,26 @@ def compare(dist1,dist2):
     else:
         return 0
 # ---- DISSIMILARITY COMPUTATION /end ---- #
+def compare2(dist1,dist2):
+    distance = 0
+    for i in range(len(dist1[1])):#-1):#because last element is the label
+        subdistance = 0
+        for j in range(len(dist1[1][i])):
+            if dist1[1][i][j] < dist2[1][i][j]:
+                subdistance -= 1
+            if dist1[1][i][j] > dist2[1][i][j]:
+                subdistance += 1
+        if subdistance > 0:
+            distance += 1
+        elif subdistance < 0:
+            distance -=1
+    #print distance
+    if distance > 0:
+        return 1
+    elif distance < 0:
+        return -1
+    else:
+        return 0
 
 
 # ------------------------- M A I N -------------------------#
@@ -219,19 +239,19 @@ for kw in kws:
                     crop_pp_trans = features[key][1][i:i+kw_width]
                     crop_lp = features[key][2][i:i+kw_width]
                     crop_up = features[key][3][i:i+kw_width]
-                    dist_pp = sum([abs(x-y) for x, y in zip(crop_pp, kw_pp)])
-                    dist_pp_trans = sum([abs(x-y) for x, y in zip(crop_pp_trans, kw_pp_trans)])
-                    dist_lp = sum([abs(x-y) for x, y in zip(crop_lp, kw_lp)])
-                    dist_up = sum([abs(x-y) for x, y in zip(crop_up, kw_up)])
+                    dist_pp = [abs(x-y) for x, y in zip(crop_pp, kw_pp)]
+                    dist_pp_trans = [abs(x-y) for x, y in zip(crop_pp_trans, kw_pp_trans)]
+                    dist_lp = [abs(x-y) for x, y in zip(crop_lp, kw_lp)]
+                    dist_up = [abs(x-y) for x, y in zip(crop_up, kw_up)]
                     dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
                     array.append([key,dist])
 
 
     #Sorting the array computed
-    array.sort(compare)
+    array.sort(compare2)
     print "Ten first hits for keyword "+kw+"."
     print "=========================="
     print " "
     for i in range(10):
-        print array[i]
+        print array[i][0]
     print " "
