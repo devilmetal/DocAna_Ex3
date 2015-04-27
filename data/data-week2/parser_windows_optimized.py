@@ -7,7 +7,7 @@ import sys
 import os
 import random
 import operator
-
+import pickle
 BLACK = 0
 WHITE = 255
 gt = {}
@@ -177,36 +177,40 @@ kws = ["O-c-t-o-b-e-r", "s-o-o-n", "t-h-a-t"]
 kws_path = "./WashingtonDB/keywords/"
 # Words
 ws = ["274-05-02", "274-12-04", "273-33-05"]
-ws_path = "WashingtonDB/lines/"
+ws_path = "WashingtonDB/_lines/"
 crop_path = "WashingtonDB/crops/"
 # Ground truth
 gt_file = "WashingtonDB/LinesWashington.txt"
 
 #PART 1 Parse all lines to obtain vector feature for each column
 features={}
-for path, subdirs, files in os.walk(ws_path):
-    #checking files
-    for file in files:
-        fname = ws_path+file
-        pp = pp_col(fname)
-        pp_trans = pp_col_transition(fname)
-        upperp = up(fname)
-        lowerp = lp(fname)
-        vector = [pp,pp_trans,upperp,lowerp]
-        features[str(file)]=vector
-
+dict_path = './features.dict'
+#Check if dict exists
+if os.path.isfile(dict_path):
+    features = pickle.load(open(dict_path,'rb'))
+else:
+    for path, subdirs, files in os.walk(ws_path):
+        #checking files
+        for file in files:
+            fname = ws_path+file
+            pp = pp_col(fname)
+            pp_trans = pp_col_transition(fname)
+            upperp = up(fname)
+            lowerp = lp(fname)
+            vector = [pp,pp_trans,upperp,lowerp]
+            features[str(file)]=vector
+    #dump dict
+    pickle.dump(features,open(dict_path,'wb'))
 #PART2 PARSE THE WHOLE DICTIONARY VECTORS WITH A GIVEN KEYWORD FEATURE VECTOR
 windows = 30 # 30px width for the sliding windows
 for kw in kws:
-    dissimilarity = {}
-    print fname
+    fname = kws_path + kw + '.png'
     kw_pp = pp_col(fname)
     kw_pp_trans = pp_col_transition(fname)
     kw_up = up(fname)
     kw_lp = lp(fname)
-    dissimilarity = {}
     array = []
-    kw_width = len(pp)
+    kw_width = len(kw_pp)
     for key in features:
             width = len(features[key][0])
             for i in range(width):
@@ -220,7 +224,7 @@ for kw in kws:
                     dist_lp = sum([abs(x-y) for x, y in zip(crop_lp, kw_lp)])
                     dist_up = sum([abs(x-y) for x, y in zip(crop_up, kw_up)])
                     dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
-                    array.append([file,dist])
+                    array.append([key,dist])
 
 
     #Sorting the array computed
