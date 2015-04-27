@@ -374,6 +374,7 @@ ws_path = "WashingtonDB/words/"
 # Ground truth
 gt_file = "WashingtonDB/WashingtonDB.txt"
 
+
 # extract ground-truth in dictionnary for quick search
 with open(gt_file) as f:
     cgt = [x.strip('\n ') for x in f.readlines()]
@@ -391,10 +392,12 @@ for kw in kws:
     dissimilarity = {}
     keyword = kws_path + kw + '.png'
     array = []
-    for w in ws:
-        word = ws_path + w + '.png'
-        dist = distance(keyword,word)
-        array.append([word,dist])
+    for path, subdirs, files in os.walk(ws_path):
+        #checking files
+        for file in files:
+            word = ws_path + file
+            dist = distance(keyword,word)
+            array.append([word,dist])
 
     #Sorting the array computed
     array.sort(compare)
