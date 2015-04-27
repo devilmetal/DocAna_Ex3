@@ -157,7 +157,7 @@ else:
     pickle.dump(features,open(dict_path,'wb'))
 
 #PART2 PARSE THE WHOLE DICTIONARY VECTORS WITH A GIVEN KEYWORD FEATURE VECTOR
-windows = 30 # 30px width for the sliding windows
+windows = 1 # 30px width for the sliding windows
 for kw in kws:
     fname = kws_path + kw + '.png'
     kw_pp = pp_col(fname)
@@ -186,6 +186,11 @@ for kw in kws:
     print "Ten first hits for keyword "+kw+"."
     print "=========================="
     print " "
-    for i in range(10):
-        print array[i][0]
+    match = []
+    nbr_hits = 10
+    while len(match) != nbr_hits:
+        elem = array.pop(0)
+        if not elem[0] in match:
+            print elem
+            match.append(elem[0])
     print " "
