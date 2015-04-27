@@ -10,7 +10,6 @@ import operator
 import pickle
 BLACK = 0
 WHITE = 255
-gt = {}
 
 def extract(fname):
     im = Image.open(fname)
@@ -26,6 +25,7 @@ def extract(fname):
     return img
 
 # ---- FEATURES EXTRACTION /begin ---- #
+
 # Projection Profiling Columns
 def pp_col(fname):
     img = extract(fname)
@@ -37,28 +37,7 @@ def pp_col(fname):
         for j in range(height):
             if img[i][j] == BLACK:
                 sum_black += 1
-
         pp.append(sum_black)
-
-    # normalize
-    norm_pp = normalize(pp)
-    return norm_pp
-
-
-# Projection Profiling Lines
-def pp_line(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    pp = []
-    # for each column count the number of black pixels
-    for j in range(height):
-        sum_black = 0
-        for i in range(width):
-            if img[i][j] == BLACK:
-                sum_black += 1
-
-        pp.append(sum_black)
-
     # normalize
     norm_pp = normalize(pp)
     return norm_pp
@@ -80,41 +59,16 @@ def pp_col_transition(fname):
             else:
                 if img[i][j] == WHITE:
                     transitions += 1
-                    white = False
+                    white = True
 
         pp.append(transitions)
     return pp
-
-# Projection Profiling Lines Transition B/W
-def pp_line_transition(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    pp = []
-    # for each column count the number of black pixels
-    for j in range(height):
-        transitions = 0
-        white = True
-        for i in range(width):
-            if white:
-                if img[i][j] == BLACK:
-                    transitions += 1
-                    white = False
-            else:
-                if img[i][j] == WHITE:
-                    transitions += 1
-                    white = False
-
-        pp.append(transitions)
-    return pp
-
 
 # Upper Profile
 def up(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
     up = []
-    # for each column count the number of white pixels until 1st black pixel is encountered
-    # TODO: need to detect where the word begins and where it ends
     for i in range(width):
         sum_white = 0
         j=0
@@ -126,12 +80,11 @@ def up(fname):
     norm_up = normalize(up)
     return norm_up
 
+# Lower Profile
 def lp(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
     lp = []
-    # for each column count the number of white pixels until 1st black pixel is encountered
-    # TODO: need to detect where the word begins and where it ends
     for i in range(width):
         sum_white = 0
         j=height-1
@@ -151,9 +104,8 @@ def normalize(x):
     return x
 # ---- FEATURES EXTRACTION /end ---- #
 
-#compare two custom distances via postal comparison
-#OUTPUT : 0 = same (=), + = greater (>), - = less (<)
 def compare(dist1,dist2):
+    #OUTPUT : 0 = same (=), +1 = greater (>), -1 = less (<)
     distance = 0
     for i in range(len(dist1[1])):#-1):#because last element is the label
         if dist1[1][i] < dist2[1][i]:
@@ -167,31 +119,13 @@ def compare(dist1,dist2):
         return -1
     else:
         return 0
-# ---- DISSIMILARITY COMPUTATION /end ---- #
-def compare2(dist1,dist2):
-    distance = 0
-    for i in range(len(dist1[1])):#-1):#because last element is the label
-        subdistance = 0
-        for j in range(len(dist1[1][i])):
-            if dist1[1][i][j] < dist2[1][i][j]:
-                subdistance -= 1
-            if dist1[1][i][j] > dist2[1][i][j]:
-                subdistance += 1
-        if subdistance > 0:
-            distance += 1
-        elif subdistance < 0:
-            distance -=1
-    #print distance
-    if distance > 0:
-        return 1
-    elif distance < 0:
-        return -1
-    else:
-        return 0
+
+
+
+
 
 
 # ------------------------- M A I N -------------------------#
-
 # Keywords
 kws = ["O-c-t-o-b-e-r", "s-o-o-n", "t-h-a-t"]
 kws_path = "./WashingtonDB/keywords/"
@@ -221,6 +155,7 @@ else:
             features[str(file)]=vector
     #dump dict
     pickle.dump(features,open(dict_path,'wb'))
+
 #PART2 PARSE THE WHOLE DICTIONARY VECTORS WITH A GIVEN KEYWORD FEATURE VECTOR
 windows = 30 # 30px width for the sliding windows
 for kw in kws:
@@ -239,16 +174,15 @@ for kw in kws:
                     crop_pp_trans = features[key][1][i:i+kw_width]
                     crop_lp = features[key][2][i:i+kw_width]
                     crop_up = features[key][3][i:i+kw_width]
-                    dist_pp = [abs(x-y) for x, y in zip(crop_pp, kw_pp)]
-                    dist_pp_trans = [abs(x-y) for x, y in zip(crop_pp_trans, kw_pp_trans)]
-                    dist_lp = [abs(x-y) for x, y in zip(crop_lp, kw_lp)]
-                    dist_up = [abs(x-y) for x, y in zip(crop_up, kw_up)]
+                    dist_pp = sum([abs(x-y) for x, y in zip(crop_pp, kw_pp)])
+                    dist_pp_trans = sum([abs(x-y) for x, y in zip(crop_pp_trans, kw_pp_trans)])
+                    dist_lp = sum([abs(x-y) for x, y in zip(crop_lp, kw_lp)])
+                    dist_up = sum([abs(x-y) for x, y in zip(crop_up, kw_up)])
                     dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
                     array.append([key,dist])
 
-
     #Sorting the array computed
-    array.sort(compare2)
+    array.sort(compare)
     print "Ten first hits for keyword "+kw+"."
     print "=========================="
     print " "
