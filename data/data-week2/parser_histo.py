@@ -371,6 +371,7 @@ kws_path = "./WashingtonDB/keywords/"
 # Words
 ws = ["274-05-02", "274-12-04", "273-33-05"]
 ws_path = "WashingtonDB/lines/"
+crops_path = "WashingtonDB/crops/"
 # Ground truth
 gt_file = "WashingtonDB/LinesWashington.txt"
 
@@ -387,7 +388,72 @@ for line in cgt:
 
 # print gt
 
-windows = 30 # 30px width for the sliding windows
+#for kw in kws:
+#    dissimilarity = {}
+#    keyword = kws_path + kw + '.png'
+#    kwimg = Image.open(keyword)
+#    kw_size = kwimg.size
+#    kw_width = kw_size[0]
+#    array = []
+
+#STEP 1 CROP ALL IMAGES ACCORDING TO PROJECTION PROFILE !
+
+for path, subdirs, files in os.walk(ws_path):
+    #checking files
+    for file in files:
+        #load image to parse
+        im=Image.open(ws_path+file)
+        size = im.size # (width,height) tuple
+        width = size[0]
+        height = size[1]
+        pixels = im.load()
+        #create histogram to cut image
+        histogram=[]
+        for x in range(width):
+            sum = 0
+            for y in range(height):
+                if pixels[x,y] == 0:
+                    sum += 1
+            histogram.append(sum)
+
+        x_len = 0
+        x_start = 0
+        black = False
+        index=[]
+        for i in range(len(histogram)):
+            if (not histogram[i] == 0) and not black:
+                black = True
+                x_len += 1
+                x_start = i
+            elif (not histogram[i] == 0) and black:
+                #consum black part
+                x_len += 1
+            elif (histogram[i] == 0) and black:
+                black = False
+                index.append([x_start,x_len])
+                x_len = 0
+            elif (histogram[i] == 0) and not black:
+                #consum white part
+                a=0
+        print index
+
+        #aggregate close values in index
+        #TODO : FIND VERY GOOD THRESHOLD
+        threshold = 20
+        for k in range(len(index)):
+            try:
+                if abs(index[k][0]+index[k][1] - index[k+1][0]) < threshold:
+                    index[k][1] = index[k][1] +index[k+1][1] + abs(index[k+1][0]-(index[k][0]+index[k][1]))
+                    index.pop(k+1)
+            except:
+                #nothing
+                a=0
+        #cut image according to the index
+        for k in range(len(index)):
+            save_path = crops_path+"part"+str(k)+'_'+file
+            im.crop((index[k][0],0,index[k][0]+index[k][1], height)).save(save_path)
+
+#PART 2 TRY TO FIND MATCH IN THOSE CROPS
 for kw in kws:
     dissimilarity = {}
     keyword = kws_path + kw + '.png'
@@ -395,19 +461,15 @@ for kw in kws:
     kw_size = kwimg.size
     kw_width = kw_size[0]
     array = []
-    for path, subdirs, files in os.walk(ws_path):
+    for path, subdirs, files in os.walk(crops_path):
         #checking files
         for file in files:
-            im=Image.open(ws_path+file)
-            size = im.size # (width,height) tuple
-            width = size[0]
-            for i in range(width):
-                if i % windows == 0 and i+kw_width < width:
-                    im.crop((i, 0,i+kw_width, size[1])).save(ws_path+'win'+str(i)+'_'+file)
-                    word = ws_path + file
-                    dist = distance(keyword,word)
-                    array.append([word,dist])
-
+            word = crops_path+file
+            line = file.split(".")[0].split("_")[1]
+            dist = distance(keyword,word)
+            array.append([line,dist])
+            #print "Crop "+str(word)+" parsed."
+    #print "keyword "+str(kw)+" done."
     #Sorting the array computed
     array.sort(compare)
     print "Ten first hits for keyword "+kws+"."
@@ -416,30 +478,13 @@ for kw in kws:
     for i in range(10):
         print array[i]
     print " "
-        #for w2 in ws:
-        #    if w1!=w2:
-        #        word2 = ws_path + w2 + '.png'
-        #        dist2 = distance(keyword,word2)
-        # dist = dtw(pp(keyword), pp(word))
-        #        if not( (w1+':'+w2 in dissimilarity) or (w2+':'+w1 in dissimilarity)):
-        #            dissimilarity[w1+':'+w2] = compare(dist1,dist2)
-
-    # ~rank list
-    #res = sorted(dissimilarity.items(), key=lambda x:x[1])
-    # res = sorted(dissimilarity, key=dissimilarity.get)
-    #tp, fn, fp, tn = 0,0,0,0 # false/true positive/negative
-    #for i in res:
-    #    if gt[i[0]] == kw:
-    #        print "ok"
-    #    else:
-    #        print "not ok"
-    #print res
-
-
-# set1, set2 = loadSets("WashingtonDB/words", 0.75)
-
-# trainSet = [[2, 2, 2, 4], [4, 4, 4, 3]]
-# testInstance = [5, 5, 5, 1]
-# k = 1
-# neighbors = getNeighbors(trainSet, testInstance, 1)
-# print(neighbors)
+'''
+#Sorting the array computed
+array.sort(compare)
+print "Ten first hits for keyword "+kws+"."
+print "=========================="
+print " "
+for i in range(10):
+    print array[i]
+print " "
+'''
