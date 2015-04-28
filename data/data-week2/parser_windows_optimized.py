@@ -76,15 +76,17 @@ def up(fname):
     begin, end = False, False
     begin_i,end_i = 0,0
     for i in range(width):
-        if img[i][j] == BLACK and not begin:
-            begin_i = i
-            begin = True
-            break
+        for j in range(height):
+            if img[i][j] == BLACK and not begin:
+                begin_i = i
+                begin = True
+                break
     for i in reversed(range(width)):
-        if img[i][j] == BLACK and not end:
-            end_i = i
-            end = True
-            break
+        for j in range(height):
+            if img[i][j] == BLACK and not end:
+                end_i = i
+                end = True
+                break
 
     for i in range(begin_i,end_i):
         sum_white = 0
