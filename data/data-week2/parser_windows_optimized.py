@@ -72,7 +72,7 @@ def up(fname):
 
     # for each column count the number of white pixels until 1st black pixel is encountered
     # need to detect where the word begins and where it ends
-    begin, end = False
+    begin, end = False, False
     begin_i,end_i = 0,0
     for i in range(width):
         if img[i][j] == BLACK and not begin:
