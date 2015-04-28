@@ -109,13 +109,32 @@ def lp(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
     lp = []
+    # for each column count the number of white pixels until 1st black pixel is encountered
+    # need to detect where the word begins and where it ends
+    begin, end = False, False
+    begin_i,end_i = 0,0
     for i in range(width):
+        if img[i][j] == BLACK and not begin:
+            begin_i = i
+            begin = True
+            break
+    for i in reversed(range(width)):
+        if img[i][j] == BLACK and not end:
+            end_i = i
+            end = True
+            break
+    for i in range(begin_i,end_i):
         sum_white = 0
         j=height-1
-        while j > 0 and img[i][j] == WHITE:
+        while j < height and img[i][j] == WHITE:
             j-=1
             sum_white += 1
+
+        if sum_white == height: # no black pixel encountered => take same value as the last one introduced
+            sum_white = lp[-1]
+
         lp.append(sum_white)
+
     # normalize
     norm_up = normalize(lp)
     return norm_up
