@@ -26,7 +26,7 @@ def extract(fname):
 
 # ---- FEATURES EXTRACTION /begin ---- #
 
-# Projection Profiling Columns
+# Projection Profiling Columns Ratio
 def pp_col(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
@@ -37,6 +37,7 @@ def pp_col(fname):
         for j in range(height):
             if img[i][j] == BLACK:
                 sum_black += 1
+        sum_black = sum_black/float(height)
         pp.append(sum_black)
     # normalize
     norm_pp = normalize(pp)
@@ -162,6 +163,7 @@ else:
     for path, subdirs, files in os.walk(ws_path):
         #checking files
         for file in files:
+            print "Encoding file "+ws_path+file
             fname = ws_path+file
             pp = pp_col(fname)
             pp_trans = pp_col_transition(fname)
@@ -203,7 +205,7 @@ for kw in kws:
     print "=========================="
     print " "
     match = []
-    nbr_hits = 10
+    nbr_hits = 150
     while len(match) != nbr_hits:
         elem = array.pop(0)
         if not elem[0] in match:
@@ -211,7 +213,7 @@ for kw in kws:
             match.append(elem[0])
 #     print " "
     precision, recall, fpr = [],[],[]
-    for threshold in range(0,10):
+    for threshold in range(0,150):
         tp,fn,fp,tn = 0,0,0,0
         for i in range(len(match)):
             m = match[i].split('.', 1)[0]
@@ -231,10 +233,26 @@ for kw in kws:
                 if not seen:
                     fn += 1
         # TODO: handle case when divided by 0 (should not happen if we take the complete ranked list)
-        print "T" +str(threshold)+ "   precision= " + str(float(tp)/(float(tp)+float(fp))) + "   recall= " + str(float(tp)/(float(tp)+float(fn))) + "   FPR= " + str(float(fp)/(float(fp)+float(tn)))
-        precision.append(float(tp)/(float(tp)+float(fp)))
-        recall.append(float(tp)/(float(tp)+float(fn)))
-        fpr.append(float(fp)/(float(fp)+float(tn)))
+        #print "tn "+str(tn)
+        #print "tp "+str(tp)
+        #print "fn "+str(fn)
+        #print "fp "+str(fp)
+        try:
+            precision_str = float(tp)/(float(tp)+float(fp))
+        except:
+            precision_str = 0.0
+        try:
+            recall_str = float(tp)/(float(tp)+float(fn))
+        except:
+            recall_str = 0.0
+        try:
+            fpr_str = float(fp)/(float(fp)+float(tn))
+        except:
+            fpr_str = 0.0
+        print "T"+str(threshold)+" precision= "+str(precision_str)+" recall= "+str(recall_str)+" FPR= "+str(fpr_str)
+        precision.append(precision_str)
+        recall.append(recall_str)
+        fpr.append(fpr_str)
 
     plt.xlabel('Recall')
     plt.ylabel('Precision')
