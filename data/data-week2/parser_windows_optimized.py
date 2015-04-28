@@ -105,17 +105,19 @@ def normalize(x):
 # ---- FEATURES EXTRACTION /end ---- #
 
 def compare(dist1,dist2):
-    #OUTPUT : 0 = same (=), +1 = greater (>), -1 = less (<)
-    distance = 0
-    for i in range(len(dist1[1])):#-1):#because last element is the label
-        if dist1[1][i] < dist2[1][i]:
-            distance -= 1
-        if dist1[1][i] > dist2[1][i]:
-            distance +=1
-    #print distance
-    if distance > 0:
+    #EUCLIDIAN DISTANCE
+    sum1=0
+    for i in range(len(dist1[1])):
+        sum1+=math.pow(dist1[1][i], 2)
+    sum1=math.sqrt(sum1)
+    sum2=0
+    for i in range(len(dist2[1])):
+        sum2+=math.pow(dist2[1][i], 2)
+    sum2=math.sqrt(sum2)
+
+    if sum1>sum2:
         return 1
-    elif distance < 0:
+    elif sum1<sum2:
         return -1
     else:
         return 0
@@ -188,10 +190,10 @@ for kw in kws:
                     crop_pp_trans = features[key][1][i:i+kw_width]
                     crop_lp = features[key][2][i:i+kw_width]
                     crop_up = features[key][3][i:i+kw_width]
-                    dist_pp = sum([abs(x-y) for x, y in zip(crop_pp, kw_pp)])
-                    dist_pp_trans = sum([abs(x-y) for x, y in zip(crop_pp_trans, kw_pp_trans)])
-                    dist_lp = sum([abs(x-y) for x, y in zip(crop_lp, kw_lp)])
-                    dist_up = sum([abs(x-y) for x, y in zip(crop_up, kw_up)])
+                    dist_pp = sum([abs(x-y) for x, y in zip(crop_pp, kw_pp)])/len(crop_pp)
+                    dist_pp_trans = sum([abs(x-y) for x, y in zip(crop_pp_trans, kw_pp_trans)])/len(crop_pp_trans)
+                    dist_lp = sum([abs(x-y) for x, y in zip(crop_lp, kw_lp)])/len(crop_lp)
+                    dist_up = sum([abs(x-y) for x, y in zip(crop_up, kw_up)])/len(crop_up)
                     dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
                     array.append([key,dist])
 
