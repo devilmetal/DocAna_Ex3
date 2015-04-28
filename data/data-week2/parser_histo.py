@@ -211,7 +211,7 @@ def dtw(ts1, ts2, d = lambda x,y: abs(x-y)):
         cost[i, 0] = cost[i-1, 0] + d(ts1[i], ts2[0])
 
     for j in xrange(1, N):
-        cost[0, j] = cost[0, j-1] + d(ts1[0], ts2[j])
+        cost[0, j] = cost[0, j-1] #+ d(ts1[0], ts2[j])
 
     # Populate rest of cost matrix within window
     for i in xrange(1, M):

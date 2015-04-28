@@ -11,6 +11,29 @@ import pickle
 BLACK = 0
 WHITE = 255
 
+def dtw(ts1, ts2, d = lambda x,y: abs(x-y)):
+    # Create cost matrix via broadcasting with large int
+    ts1, ts2 = np.array(ts1), np.array(ts2)
+    M, N = len(ts1), len(ts2)
+    cost = sys.maxint * np.ones((M, N))
+
+    # Initialize the first row and column
+    cost[0, 0] = 0
+    for i in xrange(1, M):
+        cost[i, 0] = cost[i-1, 0] + d(ts1[i], ts2[0])
+
+    for j in xrange(1, N):
+        cost[0, j] = 0
+
+    # Populate rest of cost matrix within window
+    for i in xrange(1, M):
+        for j in xrange(1, N):
+            choices = cost[i - 1, j - 1], cost[i, j-1], cost[i-1, j]
+            cost[i, j] = min(choices) + d(ts1[i], ts2[j])
+
+    # Return DTW distance given window
+    return cost[-1, -1]
+
 def extract(fname):
     im = Image.open(fname)
     pixels = im.load()
@@ -264,19 +287,31 @@ for kw in kws:
     array = []
     kw_width = len(kw_pp)
     for key in features:
-            width = len(features[key][0])
-            for i in range(width):
-                if i % windows == 0 and i+kw_width < width:
-                    crop_pp = features[key][0][i:i+kw_width]
-                    crop_pp_trans = features[key][1][i:i+kw_width]
-                    crop_lp = features[key][2][i:i+kw_width]
-                    crop_up = features[key][3][i:i+kw_width]
-                    dist_pp = sum([abs(x-y) for x, y in zip(crop_pp, kw_pp)])/len(crop_pp)
-                    dist_pp_trans = sum([abs(x-y) for x, y in zip(crop_pp_trans, kw_pp_trans)])/len(crop_pp_trans)
-                    dist_lp = sum([abs(x-y) for x, y in zip(crop_lp, kw_lp)])/len(crop_lp)
-                    dist_up = sum([abs(x-y) for x, y in zip(crop_up, kw_up)])/len(crop_up)
-                    dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
-                    array.append([key,dist])
+        line_pp = features[key][0]
+        line_pp_trans = features[key][1]
+        line_lp = features[key][2]
+        line_up = features[key][3]
+        dist_pp = dtw(kw_pp,line_pp)
+        dist_pp_trans = dtw(kw_pp_trans,line_pp_trans)
+        dist_lp = dtw(kw_lp,line_lp)
+        dist_up = dtw(kw_up,line_up)
+        dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
+        array.append([key,dist])
+        '''
+        width = len(features[key][0])
+        for i in range(width):
+            if i % windows == 0 and i+kw_width < width:
+                crop_pp = features[key][0][i:i+kw_width]
+                crop_pp_trans = features[key][1][i:i+kw_width]
+                crop_lp = features[key][2][i:i+kw_width]
+                crop_up = features[key][3][i:i+kw_width]
+                dist_pp = sum([abs(x-y) for x, y in zip(crop_pp, kw_pp)])/len(crop_pp)
+                dist_pp_trans = sum([abs(x-y) for x, y in zip(crop_pp_trans, kw_pp_trans)])/len(crop_pp_trans)
+                dist_lp = sum([abs(x-y) for x, y in zip(crop_lp, kw_lp)])/len(crop_lp)
+                dist_up = sum([abs(x-y) for x, y in zip(crop_up, kw_up)])/len(crop_up)
+                dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
+                array.append([key,dist])
+        '''
 
     #Sorting the array computed
     array.sort(compare)
