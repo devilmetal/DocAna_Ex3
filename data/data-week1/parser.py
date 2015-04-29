@@ -7,6 +7,7 @@ import sys
 import os
 import random
 import operator
+import pickle
 
 BLACK = 0
 WHITE = 255
@@ -295,66 +296,6 @@ def compare(dist1,dist2):
 
 
 
-def loadSets(dirname, split):
-    '''
-    Seperate data into a training set and a test set
-    '''
-    trainingSet = []
-    testSet = []
-
-    for file in os.listdir(dirname):
-        if file.endswith(".png"):
-            f = file.split(".")[0]
-            # l = gt[f] #label
-            # img = pp(file) #feature vector
-            if random.random() < split:
-                # img.append(l)
-                trainingSet.append(file)
-            else:
-                testSet.append(file)
-    # print trainingSet
-    # print "\n\n"
-    # print testSet
-
-    return trainingSet, testSet
-
-
-def getNeighbors(trainingSet, testInstance, k=1):
-    dist_matrix = []
-    for i in range(len(trainingSet)):
-        dist_vec = distance(testInstance, trainingSet[i]) #distance vector (w/ several features)
-        dist_matrix.append([trainingSet[i][-1], dist_vec])
-
-    dist_matrix = sorted(dist_matrix, key=methodcaller('compare'))
-    # dist_matrix.sort(key=operator.itemgetter(1))
-    # print dist_matrix
-    neighbors = []
-    for i in range(k):
-        neighbors.append(dist_matrix[i][0])
-
-    return neighbors
-
-
-def getVotes(neighbors):
-    classVotes = {}
-    for i in range(len(neighbors)):
-        response = neighbors[i][-1]
-        if response in classVotes:
-            classVotes[response] += 1
-        else:
-            classVotes[response] = 1
-    sortedVotes = sorted(classVotes.iteritems(), key=operator.itemgetter(1), reverse=True)
-    return sortedVotes[0][0]
-
-
-def knn(trainingSet, testSet, k=1):
-    predictions = []
-    for i in range(len(testSet)):
-        neighbors = getNeighbors(trainingSet, testSet[i], k)
-        result = getVotes(neighbors)
-        predictions.append(result)
-    return True
-
 
 
 
@@ -385,7 +326,26 @@ for line in cgt:
     # label = label.split('_', 1)[0]
     gt[key] = label
 
-# print gt
+
+#PART 1 Parse all lines to obtain vector feature for each column
+features={}
+dict_path = './features.dict'
+#Check if dict exists
+if os.path.isfile(dict_path):
+    features = pickle.load(open(dict_path,'rb'))
+else:
+    for path, subdirs, files in os.walk(ws_path):
+        #checking files
+        for file in files:
+            fname = ws_path+file
+            pp = pp_col(fname)
+            pp_trans = pp_col_transition(fname)
+            upperp = up(fname)
+            lowerp = lp(fname)
+            vector = [pp,pp_trans,upperp,lowerp]
+            features[str(file)]=vector
+    #dump dict
+    pickle.dump(features,open(dict_path,'wb'))
 
 
 for kw in kws:
@@ -401,31 +361,55 @@ for kw in kws:
 
     #Sorting the array computed
     array.sort(compare)
-    print array[0]
-        #for w2 in ws:
-        #    if w1!=w2:
-        #        word2 = ws_path + w2 + '.png'
-        #        dist2 = distance(keyword,word2)
-        # dist = dtw(pp(keyword), pp(word))
-        #        if not( (w1+':'+w2 in dissimilarity) or (w2+':'+w1 in dissimilarity)):
-        #            dissimilarity[w1+':'+w2] = compare(dist1,dist2)
+    print "Ten first hits for keyword "+kw+"."
+    print "=========================="
+    print " "
+    match = []
+    nbr_hits = 10
+    while len(array) != nbr_hits:
+        elem = array.pop(0)
+        if not elem[0] in array:
+            print elem
+            array.append(elem[0])
+#     print " "
+    precision, recall, fpr = [],[],[]
+    for threshold in range(0,10):
+        tp,fn,fp,tn = 0,0,0,0
+        for i in range(len(match)):
+            m = match[i].split('.', 1)[0]
+            if i <= threshold:
+                seen = False
+                if gt[m] == kw:#match
+                    tp += 1
+                else:
+                    fp += 1
+            else:
+                if gt[m] == kw:
+                    tn += 1
+                else:
+                    fn += 1
+        # TODO: handle case when divided by 0 (should not happen if we take the complete ranked list)
+        print "T" +str(threshold)+ "   precision= " + str(float(tp)/(float(tp)+float(fp))) + "   recall= " + str(float(tp)/(float(tp)+float(fn))) + "   FPR= " + str(float(fp)/(float(fp)+float(tn)))
+        precision.append(float(tp)/(float(tp)+float(fp)))
+        recall.append(float(tp)/(float(tp)+float(fn)))
+        fpr.append(float(fp)/(float(fp)+float(tn)))
 
-    # ~rank list
-    #res = sorted(dissimilarity.items(), key=lambda x:x[1])
-    # res = sorted(dissimilarity, key=dissimilarity.get)
-    #tp, fn, fp, tn = 0,0,0,0 # false/true positive/negative
-    #for i in res:
-    #    if gt[i[0]] == kw:
-    #        print "ok"
-    #    else:
-    #        print "not ok"
-    #print res
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.plot(recall, precision, 'r')
+    plt.show()
 
+    eer_x,eer_y = 0,0
+    min_diff = 1000
+    for x in fpr:
+        for y in precision:
+            if abs(x-y) < min_diff:
+                min_diff = abs(x-y)
+                eer_x,eer_y = x,y
+    print "EER= " +str(eer_x)+ "," +str(eer_y)
 
-# set1, set2 = loadSets("WashingtonDB/words", 0.75)
-
-# trainSet = [[2, 2, 2, 4], [4, 4, 4, 3]]
-# testInstance = [5, 5, 5, 1]
-# k = 1
-# neighbors = getNeighbors(trainSet, testInstance, 1)
-# print(neighbors)
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
+    plt.plot(fpr, precision, 'r', eer_x, eer_y, 'ko')
+    plt.show()
+    print " "
