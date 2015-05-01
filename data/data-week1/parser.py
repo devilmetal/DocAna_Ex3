@@ -171,12 +171,12 @@ def dtw(ts1, ts2, d = lambda x,y: abs(x-y)):
     cost = sys.maxint * np.ones((M, N))
 
     # Initialize the first row and column
-    cost[0, 0] = 0#d(ts1[0], ts2[0])
+    cost[0, 0] = d(ts1[0], ts2[0])
     for i in xrange(1, M):
         cost[i, 0] = cost[i-1, 0] + d(ts1[i], ts2[0])
 
     for j in xrange(1, N):
-        cost[0, j] = 0#cost[0, j-1] + d(ts1[0], ts2[j])
+        cost[0, j] = cost[0, j-1] + d(ts1[0], ts2[j])
 
     # Populate rest of cost matrix within window
     for i in xrange(1, M):
@@ -195,11 +195,11 @@ def compare(dist1,dist2):
     sum1=0
     for i in range(len(dist1[1])):
         sum1+=math.pow(dist1[1][i], 2)
-        sum1=math.sqrt(sum1)
-        sum2=0
+    sum1=math.sqrt(sum1)
+    sum2=0
     for i in range(len(dist2[1])):
         sum2+=math.pow(dist2[1][i], 2)
-        sum2=math.sqrt(sum2)
+    sum2=math.sqrt(sum2)
 
     if sum1>sum2:
         return 1
@@ -271,17 +271,16 @@ for kw in kws:
     kw_up = up(fname)
     kw_lp = lp(fname)
     array = []
-    kw_width = len(kw_pp)
     for key in features:
         w_pp = features[key][0]
         w_pp_trans = features[key][1]
-        w_lp = features[key][2]
-        w_up = features[key][3]
+        w_up = features[key][2]
+        w_lp = features[key][3]
         dist_pp = dtw(kw_pp,w_pp)
         dist_pp_trans = dtw(kw_pp_trans,w_pp_trans)
         dist_lp = dtw(kw_lp,w_lp)
         dist_up = dtw(kw_up,w_up)
-        dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
+        dist=[dist_pp,dist_pp_trans,dist_up,dist_lp]
         array.append([key,dist])
 
     #Sorting the array computed
@@ -329,10 +328,7 @@ for kw in kws:
         precision.append(precision_str)
         recall.append(recall_str)
         fpr.append(fpr_str)
-        # print "T" +str(threshold)+ "   precision= " + str(float(tp)/(float(tp)+float(fp))) + "   recall= " + str(float(tp)/(float(tp)+float(fn))) + "   FPR= " + str(float(fp)/(float(fp)+float(tn)))
-        # precision.append(float(tp)/(float(tp)+float(fp)))
-        # recall.append(float(tp)/(float(tp)+float(fn)))
-        # fpr.append(float(fp)/(float(fp)+float(tn)))
+        
 
     plt.xlabel('Recall')
     plt.ylabel('Precision')
