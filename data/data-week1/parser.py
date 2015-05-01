@@ -294,6 +294,7 @@ for kw in kws:
         elem = array.pop(0)
         if not elem[0] in match:
             print elem
+            print gt[elem[0].split('.', 1)[0]]
             match.append(elem[0])
 #     print " "
     precision, recall, fpr = [],[],[]
@@ -329,11 +330,12 @@ for kw in kws:
         recall.append(recall_str)
         fpr.append(fpr_str)
 
-
+    plt.figure(1, figsize=(9, 4))
+    plt.subplot(121)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.plot(recall, precision, 'r')
-    plt.show()
+    # plt.show()
 
     eer_x,eer_y = 0,0
     min_diff = 1000
@@ -344,8 +346,13 @@ for kw in kws:
                 eer_x,eer_y = 1-x,y
     print "EER= " +str(eer_x)+ "," +str(eer_y)
 
+    plt.subplot(122)
     plt.xlabel('FPR')
     plt.ylabel('TPR')
     plt.plot(fpr, recall, 'r', eer_x, eer_y, 'ko')
+    # plt.show()
+    # print " "
+
+    plt.savefig(kw + "_res.png")
     plt.show()
     print " "
