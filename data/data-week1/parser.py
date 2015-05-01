@@ -11,7 +11,6 @@ import pickle
 
 BLACK = 0
 WHITE = 255
-gt = {}
 
 def extract(fname):
     im = Image.open(fname)
@@ -25,44 +24,6 @@ def extract(fname):
             line.append(cpixel)
         img.append(line)
     return img
-
-
-# ---- USE THESE METHODS TO DRAW HISTOGRAM /begin ---- #
-# count the number of black pixel for each column
-def get_vhist(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    hist = []
-
-    for i in range(width):
-        for j in range(height):
-            if img[i][j] == BLACK:
-                hist.append(i)
-
-    bins = width
-    plt.hist(hist, bins, [0,bins])
-    plt.title('Vertical Histogram for ' + fname)
-    plt.show()
-
-
-# count the number of black pixel for each line
-def get_hhist(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    hist = []
-
-    for j in range(height):
-        for i in range(width):
-            if img[i][j] == BLACK:
-                hist.append(j)
-
-    bins = height
-    plt.hist(hist, bins, [0,bins])
-    plt.title('Horizontal Histogram for ' + fname)
-    plt.show()
-# ---- USE THESE METHODS TO DRAW HISTOGRAM /end ---- #
-
-
 
 
 
@@ -230,6 +191,7 @@ kws_path = "./WashingtonDB/keywords/"
 ws_path = "WashingtonDB/words/"
 # Ground truth
 gt_file = "WashingtonDB/WashingtonDB.txt"
+gt = {}
 
 
 # extract ground-truth in dictionnary for quick search
@@ -335,14 +297,12 @@ for kw in kws:
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.plot(recall, precision, 'r')
-    # plt.show()
 
     eer_x,eer_y = 0,0
     min_diff = 1000
     for x in fpr:
         for y in recall:
             if abs(1-x-y) == 0:
-                # min_diff = abs(x-y)
                 eer_x,eer_y = 1-x,y
     print "EER= " +str(eer_x)+ "," +str(eer_y)
 
@@ -350,8 +310,6 @@ for kw in kws:
     plt.xlabel('FPR')
     plt.ylabel('TPR')
     plt.plot(fpr, recall, 'r', eer_x, eer_y, 'ko')
-    # plt.show()
-    # print " "
 
     plt.savefig(kw + "_res.png")
     plt.show()
