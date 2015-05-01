@@ -273,10 +273,13 @@ f.close()
 for line in cgt:
     key = line.split(' ', 1)[0]
     label = line.split(' ', 1)[1]
-    # label = label.split('_', 1)[0]
     gt[key] = label
 
-# print gt
+# for key in gt:
+#     if gt[key] == "O-c-t-o-b-e-r":
+#         print key
+
+
 #PART 1 Parse all lines to obtain vector feature for each column
 features={}
 dict_path = './features_ppratio.dict'
@@ -319,7 +322,7 @@ for kw in kws:
 
     #Sorting the array computed
     array.sort(compare)
-    print "Ten first hits for keyword "+kw+"."
+    print "50 first hits for keyword "+kw+"."
     print "=========================="
     print " "
     match = []
@@ -330,7 +333,7 @@ for kw in kws:
             print elem
             print gt[elem[0].split('.', 1)[0]]
             match.append(elem[0])
-#     print " "
+
     precision, recall, fpr = [],[],[]
     for threshold in range(0,50):
         tp,fn,fp,tn = 0,0,0,0
@@ -372,10 +375,11 @@ for kw in kws:
 
     eer_x,eer_y = 0,0
     min_diff = 1000
-    for x in fpr:
-        for y in recall:
-            if abs(1-x-y) == 0:
-                eer_x,eer_y = 1-x,y
+    for i in range(len(fpr)):
+        if abs(fpr[i]-recall[i]) < min_diff:
+            min_diff = abs(fpr[i]-recall[i])
+            eer_x,eer_y = fpr[i],recall[i]
+
     print "EER= " +str(eer_x)+ "," +str(eer_y)
 
     plt.subplot(122)
