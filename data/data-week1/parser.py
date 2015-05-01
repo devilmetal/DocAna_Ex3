@@ -328,7 +328,7 @@ for kw in kws:
         precision.append(precision_str)
         recall.append(recall_str)
         fpr.append(fpr_str)
-        
+
 
     plt.xlabel('Recall')
     plt.ylabel('Precision')
@@ -338,7 +338,7 @@ for kw in kws:
     eer_x,eer_y = 0,0
     min_diff = 1000
     for x in fpr:
-        for y in precision:
+        for y in recall:
             if abs(1-x-y) == 0:
                 # min_diff = abs(x-y)
                 eer_x,eer_y = 1-x,y
@@ -346,6 +346,6 @@ for kw in kws:
 
     plt.xlabel('FPR')
     plt.ylabel('TPR')
-    plt.plot(fpr, precision, 'r', eer_x, eer_y, 'ko')
+    plt.plot(fpr, recall, 'r', eer_x, eer_y, 'ko')
     plt.show()
     print " "
