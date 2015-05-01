@@ -133,7 +133,7 @@ def lp(fname):
     for i in range(width):
         sum_white = 0
         j=height-1
-        while j > 0 and img[i][j] == WHITE:
+        while j >= 0 and img[i][j] == WHITE:
             j-=1
             sum_white += 1
         if sum_white == height:

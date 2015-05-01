@@ -86,7 +86,10 @@ def pp_col_transition(fname):
                     white = True
 
         pp.append(transitions)
-    return pp
+    # normalize
+    norm_pp = normalize(pp)
+    return norm_pp
+
 '''
 # Upper Profile
 def up(fname):
@@ -137,13 +140,13 @@ def lp(fname):
     begin, end = False, False
     begin_i,end_i = 0,0
     for i in range(width):
-        for j in range(height):
+        for j in reversed(range(height)):
             if img[i][j] == BLACK and not begin:
                 begin_i = i
                 begin = True
                 break
     for i in reversed(range(width)):
-        for j in range(height):
+        for j in reversed(range(height)):
             if img[i][j] == BLACK and not end:
                 end_i = i
                 end = True
@@ -151,7 +154,7 @@ def lp(fname):
     for i in range(begin_i,end_i):
         sum_white = 0
         j=height-1
-        while j < height and img[i][j] == WHITE:
+        while j >= 0 and img[i][j] == WHITE:
             j-=1
             sum_white += 1
 
@@ -169,14 +172,14 @@ def up(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
     up = []
-    # for each column count the number of white pixels until 1st black pixel is encountered
-    # TODO: need to detect where the word begins and where it ends
     for i in range(width):
         sum_white = 0
         j=0
         while j < height and img[i][j] == WHITE:
             j+=1
             sum_white += 1
+        if sum_white == height:
+            sum_white = int(height/2)
         up.append(sum_white)
     # normalize
     norm_up = normalize(up)
@@ -186,23 +189,26 @@ def lp(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
     lp = []
-    # for each column count the number of white pixels until 1st black pixel is encountered
-    # TODO: need to detect where the word begins and where it ends
     for i in range(width):
         sum_white = 0
         j=height-1
-        while j > 0 and img[i][j] == WHITE:
+        while j >= 0 and img[i][j] == WHITE:
             j-=1
             sum_white += 1
+        if sum_white == height:
+            sum_white = int(height/2)
         lp.append(sum_white)
     # normalize
     norm_up = normalize(lp)
     return norm_up
 
 def normalize(x):
-    m = np.max(np.array(x))
+    ma = max(x)
+    mi = min(x)
+    if ma == mi:
+        mi = 0
     for i in range(len(x)):
-        x[i] = float(x[i])/float(m)
+        x[i] = (x[i]-mi)/float(ma-mi)
 
     return x
 # ---- FEATURES EXTRACTION /end ---- #
@@ -250,7 +256,6 @@ for line in cgt:
     key = line.split(' ', 1)[0]
     label = line.split(' ', 1)[1]
     label = label.split('|')
-    # label = label.split('_', 1)[0]
     gt[key] = label
 
 # print gt
@@ -289,13 +294,13 @@ for kw in kws:
     for key in features:
         line_pp = features[key][0]
         line_pp_trans = features[key][1]
-        line_lp = features[key][2]
-        line_up = features[key][3]
+        line_up = features[key][2]
+        line_lp = features[key][3]
         dist_pp = dtw(kw_pp,line_pp)
         dist_pp_trans = dtw(kw_pp_trans,line_pp_trans)
         dist_lp = dtw(kw_lp,line_lp)
         dist_up = dtw(kw_up,line_up)
-        dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
+        dist=[dist_pp,dist_pp_trans,dist_up,dist_lp]
         array.append([key,dist])
         '''
         width = len(features[key][0])
@@ -315,11 +320,11 @@ for kw in kws:
 
     #Sorting the array computed
     array.sort(compare)
-    print "Ten first hits for keyword "+kw+"."
+    print "50 first hits for keyword "+kw+"."
     print "=========================="
     print " "
     match = []
-    nbr_hits = 150
+    nbr_hits = 50
     while len(match) != nbr_hits:
         elem = array.pop(0)
         if not elem[0] in match:
@@ -327,7 +332,7 @@ for kw in kws:
             match.append(elem[0])
 #     print " "
     precision, recall, fpr = [],[],[]
-    for threshold in range(0,150):
+    for threshold in range(0,50):
         tp,fn,fp,tn = 0,0,0,0
         for i in range(len(match)):
             m = match[i].split('.', 1)[0]
@@ -346,11 +351,6 @@ for kw in kws:
                         tn += 1
                 if not seen:
                     fn += 1
-        # TODO: handle case when divided by 0 (should not happen if we take the complete ranked list)
-        #print "tn "+str(tn)
-        #print "tp "+str(tp)
-        #print "fn "+str(fn)
-        #print "fp "+str(fp)
         try:
             precision_str = float(tp)/(float(tp)+float(fp))
         except:
@@ -368,22 +368,26 @@ for kw in kws:
         recall.append(recall_str)
         fpr.append(fpr_str)
 
+    plt.figure(1, figsize=(9, 4))
+    plt.subplot(121)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.plot(recall, precision, 'r')
-    plt.show()
 
     eer_x,eer_y = 0,0
     min_diff = 1000
-    for x in fpr:
-        for y in precision:
-            if abs(x-y) < min_diff:
-                min_diff = abs(x-y)
-                eer_x,eer_y = x,y
+    for i in range(len(fpr)):
+        if abs(fpr[i]-recall[i]) < min_diff:
+            min_diff = abs(fpr[i]-recall[i])
+            eer_x,eer_y = fpr[i],recall[i]
+
     print "EER= " +str(eer_x)+ "," +str(eer_y)
 
+    plt.subplot(122)
     plt.xlabel('FPR')
     plt.ylabel('TPR')
-    plt.plot(fpr, precision, 'r', eer_x, eer_y, 'ko')
+    plt.plot(fpr, recall, 'r', eer_x, eer_y, 'ko')
+
+    plt.savefig(kw + "_res.png")
     plt.show()
     print " "
