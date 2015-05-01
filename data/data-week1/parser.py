@@ -11,7 +11,6 @@ import pickle
 
 BLACK = 0
 WHITE = 255
-gt = {}
 
 def extract(fname):
     im = Image.open(fname)
@@ -25,44 +24,6 @@ def extract(fname):
             line.append(cpixel)
         img.append(line)
     return img
-
-
-# ---- USE THESE METHODS TO DRAW HISTOGRAM /begin ---- #
-# count the number of black pixel for each column
-def get_vhist(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    hist = []
-
-    for i in range(width):
-        for j in range(height):
-            if img[i][j] == BLACK:
-                hist.append(i)
-
-    bins = width
-    plt.hist(hist, bins, [0,bins])
-    plt.title('Vertical Histogram for ' + fname)
-    plt.show()
-
-
-# count the number of black pixel for each line
-def get_hhist(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    hist = []
-
-    for j in range(height):
-        for i in range(width):
-            if img[i][j] == BLACK:
-                hist.append(j)
-
-    bins = height
-    plt.hist(hist, bins, [0,bins])
-    plt.title('Horizontal Histogram for ' + fname)
-    plt.show()
-# ---- USE THESE METHODS TO DRAW HISTOGRAM /end ---- #
-
-
 
 
 
@@ -106,7 +67,9 @@ def pp_col_transition(fname):
                     white = False
 
         pp.append(transitions)
-    return pp
+    # normalize
+    norm_pp = normalize(pp)
+    return norm_pp
 
 
 # Upper Profile
@@ -114,8 +77,6 @@ def up(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
     up = []
-    # for each column count the number of white pixels until 1st black pixel is encountered
-    # TODO: need to detect where the word begins and where it ends
     for i in range(width):
         sum_white = 0
         j=0
@@ -128,13 +89,47 @@ def up(fname):
     # normalize
     norm_up = normalize(up)
     return norm_up
+    # img = extract(fname)
+    # width, height = len(img), len(img[0])
+    # up = []
+    #
+    # # for each column count the number of white pixels until 1st black pixel is encountered
+    # # need to detect where the word begins and where it ends
+    # begin, end = False, False
+    # begin_i,end_i = 0,0
+    # for i in range(width):
+    #     for j in range(height):
+    #         if img[i][j] == BLACK and not begin:
+    #             begin_i = i
+    #             begin = True
+    #             break
+    # for i in reversed(range(width)):
+    #     for j in range(height):
+    #         if img[i][j] == BLACK and not end:
+    #             end_i = i
+    #             end = True
+    #             break
+    #
+    # for i in range(begin_i,end_i):
+    #     sum_white = 0
+    #     j=0
+    #     while j < height and img[i][j] == WHITE:
+    #         j+=1
+    #         sum_white += 1
+    #
+    #     if sum_white == height: # no black pixel encountered => take same value as the last one introduced
+    #         sum_white = up[-1]
+    #
+    #     up.append(sum_white)
+
+    # normalize
+    norm_up = normalize(up)
+    return norm_up
 
 def lp(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
     lp = []
-    # for each column count the number of white pixels until 1st black pixel is encountered
-    # TODO: need to detect where the word begins and where it ends
     for i in range(width):
         sum_white = 0
         j=height-1
@@ -147,13 +142,51 @@ def lp(fname):
     # normalize
     norm_up = normalize(lp)
     return norm_up
+    # img = extract(fname)
+    # width, height = len(img), len(img[0])
+    # lp = []
+    # # for each column count the number of white pixels until 1st black pixel is encountered
+    # # need to detect where the word begins and where it ends
+    # begin, end = False, False
+    # begin_i,end_i = 0,0
+    # for i in range(width):
+    #     for j in reversed(range(height)):
+    #         if img[i][j] == BLACK and not begin:
+    #             begin_i = i
+    #             begin = True
+    #             break
+    # for i in reversed(range(width)):
+    #     for j in reversed(range(height)):
+    #         if img[i][j] == BLACK and not end:
+    #             end_i = i
+    #             end = True
+    #             break
+    # for i in range(begin_i,end_i):
+    #     sum_white = 0
+    #     j=height-1
+    #     while j >= 0 and img[i][j] == WHITE:
+    #         j-=1
+    #         sum_white += 1
+    #
+    #     if sum_white == height: # no black pixel encountered => take same value as the last one introduced
+    #         sum_white = lp[-1]
+    #
+    #     lp.append(sum_white)
+    #
+    # # normalize
+    # norm_up = normalize(lp)
+    # return norm_up
 
 def normalize(x):
-    m = np.max(np.array(x))
+    ma = max(x)
+    mi = min(x)
+    if ma == mi:
+        mi = 0
     for i in range(len(x)):
-        x[i] = float(x[i])/float(m)
+        x[i] = (x[i]-mi)/float(ma-mi)
 
     return x
+
 # ---- FEATURES EXTRACTION /end ---- #
 
 
@@ -230,6 +263,7 @@ kws_path = "./WashingtonDB/keywords/"
 ws_path = "WashingtonDB/words/"
 # Ground truth
 gt_file = "WashingtonDB/WashingtonDB.txt"
+gt = {}
 
 
 # extract ground-truth in dictionnary for quick search
@@ -245,7 +279,7 @@ for line in cgt:
 # print gt
 #PART 1 Parse all lines to obtain vector feature for each column
 features={}
-dict_path = './features.dict'
+dict_path = './features_ppratio.dict'
 #Check if dict exists
 if os.path.isfile(dict_path):
     features = pickle.load(open(dict_path,'rb'))
@@ -289,7 +323,7 @@ for kw in kws:
     print "=========================="
     print " "
     match = []
-    nbr_hits = 10
+    nbr_hits = 50
     while len(match) != nbr_hits:
         elem = array.pop(0)
         if not elem[0] in match:
@@ -298,7 +332,7 @@ for kw in kws:
             match.append(elem[0])
 #     print " "
     precision, recall, fpr = [],[],[]
-    for threshold in range(0,10):
+    for threshold in range(0,50):
         tp,fn,fp,tn = 0,0,0,0
         for i in range(len(match)):
             m = match[i].split('.', 1)[0]
@@ -335,14 +369,12 @@ for kw in kws:
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.plot(recall, precision, 'r')
-    # plt.show()
 
     eer_x,eer_y = 0,0
     min_diff = 1000
     for x in fpr:
         for y in recall:
             if abs(1-x-y) == 0:
-                # min_diff = abs(x-y)
                 eer_x,eer_y = 1-x,y
     print "EER= " +str(eer_x)+ "," +str(eer_y)
 
@@ -350,9 +382,7 @@ for kw in kws:
     plt.xlabel('FPR')
     plt.ylabel('TPR')
     plt.plot(fpr, recall, 'r', eer_x, eer_y, 'ko')
-    # plt.show()
-    # print " "
 
-    plt.savefig(kw + "_res.png")
+    plt.savefig(kw + "_res_ppratio.png")
     plt.show()
     print " "
