@@ -78,31 +78,13 @@ def pp_col(fname):
         for j in range(height):
             if img[i][j] == BLACK:
                 sum_black += 1
-
+        sum_black = sum_black/float(height)
         pp.append(sum_black)
 
     # normalize
     norm_pp = normalize(pp)
     return norm_pp
 
-
-# Projection Profiling Lines
-def pp_line(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    pp = []
-    # for each column count the number of black pixels
-    for j in range(height):
-        sum_black = 0
-        for i in range(width):
-            if img[i][j] == BLACK:
-                sum_black += 1
-
-        pp.append(sum_black)
-
-    # normalize
-    norm_pp = normalize(pp)
-    return norm_pp
 
 # Projection Profiling Columns Transition B/W
 def pp_col_transition(fname):
@@ -114,28 +96,6 @@ def pp_col_transition(fname):
         transitions = 0
         white = True
         for j in range(height):
-            if white:
-                if img[i][j] == BLACK:
-                    transitions += 1
-                    white = False
-            else:
-                if img[i][j] == WHITE:
-                    transitions += 1
-                    white = False
-
-        pp.append(transitions)
-    return pp
-
-# Projection Profiling Lines Transition B/W
-def pp_line_transition(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    pp = []
-    # for each column count the number of black pixels
-    for j in range(height):
-        transitions = 0
-        white = True
-        for i in range(width):
             if white:
                 if img[i][j] == BLACK:
                     transitions += 1
@@ -162,6 +122,8 @@ def up(fname):
         while j < height and img[i][j] == WHITE:
             j+=1
             sum_white += 1
+        if sum_white == height:
+            sum_white = int(height/2)
         up.append(sum_white)
     # normalize
     norm_up = normalize(up)
@@ -179,6 +141,8 @@ def lp(fname):
         while j > 0 and img[i][j] == WHITE:
             j-=1
             sum_white += 1
+        if sum_white == height:
+            sum_white = int(height/2)
         lp.append(sum_white)
     # normalize
     norm_up = normalize(lp)
@@ -207,12 +171,12 @@ def dtw(ts1, ts2, d = lambda x,y: abs(x-y)):
     cost = sys.maxint * np.ones((M, N))
 
     # Initialize the first row and column
-    cost[0, 0] = d(ts1[0], ts2[0])
+    cost[0, 0] = 0#d(ts1[0], ts2[0])
     for i in xrange(1, M):
         cost[i, 0] = cost[i-1, 0] + d(ts1[i], ts2[0])
 
     for j in xrange(1, N):
-        cost[0, j] = cost[0, j-1] + d(ts1[0], ts2[j])
+        cost[0, j] = 0#cost[0, j-1] + d(ts1[0], ts2[j])
 
     # Populate rest of cost matrix within window
     for i in xrange(1, M):
@@ -224,70 +188,22 @@ def dtw(ts1, ts2, d = lambda x,y: abs(x-y)):
     return cost[-1, -1]
 
 
-#Gives a distance between to given image according to some features.
-#fname1 = testInstance, fname2 = trainInstance
-def distance(fname1,fname2):
-    vector=[]
-    #Feature 1 Project Profile per column
-    pp1 = pp_col(fname1)
-    pp2 = pp_col(fname2)
-    feature = dtw(pp1, pp2)
-    vector.append(feature)
-
-    #Feature 2 Project Profile per line
-    #pp1 = pp_line(fname1)
-    #pp2 = pp_line(fname2)
-    #feature = dtw(pp1, pp2)
-    #vector.append(feature)
-
-    #Feature 3 Project Profile transition B/W  per line
-    #pp1 = pp_line_transition(fname1)
-    #pp2 = pp_line_transition(fname2)
-    #feature = dtw(pp1, pp2)
-    #vector.append(feature)
-
-    #Feature 4 Project Profile transition B/W per column
-    pp1 = pp_col_transition(fname1)
-    pp2 = pp_col_transition(fname2)
-    feature = dtw(pp1, pp2)
-    vector.append(feature)
-
-    #Feature 5 Upper Profile
-    up1 = up(fname1)
-    up2 = up(fname2)
-    feature = dtw(up1, up2)
-    vector.append(feature)
-
-    #Feature 6 Upper Profile
-    lp1 = lp(fname1)
-    lp2 = lp(fname2)
-    feature = dtw(lp1, lp2)
-    vector.append(feature)
-
-    #append label of fname2
-    #f = fname2.split(".")[0]
-    #print fname2
-    #l = gt[f] #label
-    #vector.append(l)
-    # img = pp(file) #feature vector
-    return vector
-
-
 #compare two custom distances via postal comparison
 #OUTPUT : 0 = same (=), + = greater (>), - = less (<)
 def compare(dist1,dist2):
-    distance = 0
-    #compare feature 1 : projection profile column
+    #EUCLIDIAN DISTANCE
+    sum1=0
+    for i in range(len(dist1[1])):
+        sum1+=math.pow(dist1[1][i], 2)
+        sum1=math.sqrt(sum1)
+        sum2=0
+    for i in range(len(dist2[1])):
+        sum2+=math.pow(dist2[1][i], 2)
+        sum2=math.sqrt(sum2)
 
-    for i in range(len(dist1[1])):#-1):#because last element is the label
-        if dist1[1][i] < dist2[1][i]:
-            distance -= 1
-        if dist1[1][i] > dist2[1][i]:
-            distance +=1
-    #print distance
-    if distance > 0:
+    if sum1>sum2:
         return 1
-    elif distance < 0:
+    elif sum1<sum2:
         return -1
     else:
         return 0
@@ -310,7 +226,7 @@ def compare(dist1,dist2):
 kws = ["O-c-t-o-b-e-r", "s-o-o-n", "t-h-a-t"]
 kws_path = "./WashingtonDB/keywords/"
 # Words
-ws = ["274-05-02", "274-12-04", "273-33-05"]
+# ws = ["274-05-02", "274-12-04", "273-33-05"]
 ws_path = "WashingtonDB/words/"
 # Ground truth
 gt_file = "WashingtonDB/WashingtonDB.txt"
@@ -326,7 +242,7 @@ for line in cgt:
     # label = label.split('_', 1)[0]
     gt[key] = label
 
-
+# print gt
 #PART 1 Parse all lines to obtain vector feature for each column
 features={}
 dict_path = './features.dict'
@@ -349,15 +265,24 @@ else:
 
 
 for kw in kws:
-    dissimilarity = {}
-    keyword = kws_path + kw + '.png'
+    fname = kws_path + kw + '.png'
+    kw_pp = pp_col(fname)
+    kw_pp_trans = pp_col_transition(fname)
+    kw_up = up(fname)
+    kw_lp = lp(fname)
     array = []
-    for path, subdirs, files in os.walk(ws_path):
-        #checking files
-        for file in files:
-            word = ws_path + file
-            dist = distance(keyword,word)
-            array.append([word,dist])
+    kw_width = len(kw_pp)
+    for key in features:
+        w_pp = features[key][0]
+        w_pp_trans = features[key][1]
+        w_lp = features[key][2]
+        w_up = features[key][3]
+        dist_pp = dtw(kw_pp,w_pp)
+        dist_pp_trans = dtw(kw_pp_trans,w_pp_trans)
+        dist_lp = dtw(kw_lp,w_lp)
+        dist_up = dtw(kw_up,w_up)
+        dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
+        array.append([key,dist])
 
     #Sorting the array computed
     array.sort(compare)
@@ -366,19 +291,19 @@ for kw in kws:
     print " "
     match = []
     nbr_hits = 10
-    while len(array) != nbr_hits:
+    while len(match) != nbr_hits:
         elem = array.pop(0)
-        if not elem[0] in array:
+        if not elem[0] in match:
             print elem
-            array.append(elem[0])
+            match.append(elem[0])
 #     print " "
     precision, recall, fpr = [],[],[]
     for threshold in range(0,10):
         tp,fn,fp,tn = 0,0,0,0
         for i in range(len(match)):
             m = match[i].split('.', 1)[0]
+            # print m
             if i <= threshold:
-                seen = False
                 if gt[m] == kw:#match
                     tp += 1
                 else:
@@ -388,11 +313,26 @@ for kw in kws:
                     tn += 1
                 else:
                     fn += 1
-        # TODO: handle case when divided by 0 (should not happen if we take the complete ranked list)
-        print "T" +str(threshold)+ "   precision= " + str(float(tp)/(float(tp)+float(fp))) + "   recall= " + str(float(tp)/(float(tp)+float(fn))) + "   FPR= " + str(float(fp)/(float(fp)+float(tn)))
-        precision.append(float(tp)/(float(tp)+float(fp)))
-        recall.append(float(tp)/(float(tp)+float(fn)))
-        fpr.append(float(fp)/(float(fp)+float(tn)))
+        try:
+            precision_str = float(tp)/(float(tp)+float(fp))
+        except:
+            precision_str = 0.0
+        try:
+            recall_str = float(tp)/(float(tp)+float(fn))
+        except:
+            recall_str = 0.0
+        try:
+            fpr_str = float(fp)/(float(fp)+float(tn))
+        except:
+            fpr_str = 0.0
+        print "T"+str(threshold)+" precision= "+str(precision_str)+" recall= "+str(recall_str)+" FPR= "+str(fpr_str)
+        precision.append(precision_str)
+        recall.append(recall_str)
+        fpr.append(fpr_str)
+        # print "T" +str(threshold)+ "   precision= " + str(float(tp)/(float(tp)+float(fp))) + "   recall= " + str(float(tp)/(float(tp)+float(fn))) + "   FPR= " + str(float(fp)/(float(fp)+float(tn)))
+        # precision.append(float(tp)/(float(tp)+float(fp)))
+        # recall.append(float(tp)/(float(tp)+float(fn)))
+        # fpr.append(float(fp)/(float(fp)+float(tn)))
 
     plt.xlabel('Recall')
     plt.ylabel('Precision')
@@ -403,9 +343,9 @@ for kw in kws:
     min_diff = 1000
     for x in fpr:
         for y in precision:
-            if abs(x-y) < min_diff:
-                min_diff = abs(x-y)
-                eer_x,eer_y = x,y
+            if abs(1-x-y) == 0:
+                # min_diff = abs(x-y)
+                eer_x,eer_y = 1-x,y
     print "EER= " +str(eer_x)+ "," +str(eer_y)
 
     plt.xlabel('FPR')
