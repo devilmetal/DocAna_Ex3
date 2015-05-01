@@ -7,6 +7,7 @@ import sys
 import os
 import random
 import operator
+import pickle
 
 BLACK = 0
 WHITE = 255
@@ -77,31 +78,13 @@ def pp_col(fname):
         for j in range(height):
             if img[i][j] == BLACK:
                 sum_black += 1
-
+        sum_black = sum_black/float(height)
         pp.append(sum_black)
 
     # normalize
     norm_pp = normalize(pp)
     return norm_pp
 
-
-# Projection Profiling Lines
-def pp_line(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    pp = []
-    # for each column count the number of black pixels
-    for j in range(height):
-        sum_black = 0
-        for i in range(width):
-            if img[i][j] == BLACK:
-                sum_black += 1
-
-        pp.append(sum_black)
-
-    # normalize
-    norm_pp = normalize(pp)
-    return norm_pp
 
 # Projection Profiling Columns Transition B/W
 def pp_col_transition(fname):
@@ -113,28 +96,6 @@ def pp_col_transition(fname):
         transitions = 0
         white = True
         for j in range(height):
-            if white:
-                if img[i][j] == BLACK:
-                    transitions += 1
-                    white = False
-            else:
-                if img[i][j] == WHITE:
-                    transitions += 1
-                    white = False
-
-        pp.append(transitions)
-    return pp
-
-# Projection Profiling Lines Transition B/W
-def pp_line_transition(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    pp = []
-    # for each column count the number of black pixels
-    for j in range(height):
-        transitions = 0
-        white = True
-        for i in range(width):
             if white:
                 if img[i][j] == BLACK:
                     transitions += 1
@@ -161,6 +122,8 @@ def up(fname):
         while j < height and img[i][j] == WHITE:
             j+=1
             sum_white += 1
+        if sum_white == height:
+            sum_white = int(height/2)
         up.append(sum_white)
     # normalize
     norm_up = normalize(up)
@@ -178,6 +141,8 @@ def lp(fname):
         while j > 0 and img[i][j] == WHITE:
             j-=1
             sum_white += 1
+        if sum_white == height:
+            sum_white = int(height/2)
         lp.append(sum_white)
     # normalize
     norm_up = normalize(lp)
@@ -223,70 +188,22 @@ def dtw(ts1, ts2, d = lambda x,y: abs(x-y)):
     return cost[-1, -1]
 
 
-#Gives a distance between to given image according to some features.
-#fname1 = testInstance, fname2 = trainInstance
-def distance(fname1,fname2):
-    vector=[]
-    #Feature 1 Project Profile per column
-    pp1 = pp_col(fname1)
-    pp2 = pp_col(fname2)
-    feature = dtw(pp1, pp2)
-    vector.append(feature)
-
-    #Feature 2 Project Profile per line
-    #pp1 = pp_line(fname1)
-    #pp2 = pp_line(fname2)
-    #feature = dtw(pp1, pp2)
-    #vector.append(feature)
-
-    #Feature 3 Project Profile transition B/W  per line
-    #pp1 = pp_line_transition(fname1)
-    #pp2 = pp_line_transition(fname2)
-    #feature = dtw(pp1, pp2)
-    #vector.append(feature)
-
-    #Feature 4 Project Profile transition B/W per column
-    pp1 = pp_col_transition(fname1)
-    pp2 = pp_col_transition(fname2)
-    feature = dtw(pp1, pp2)
-    vector.append(feature)
-
-    #Feature 5 Upper Profile
-    up1 = up(fname1)
-    up2 = up(fname2)
-    feature = dtw(up1, up2)
-    vector.append(feature)
-
-    #Feature 6 Upper Profile
-    lp1 = lp(fname1)
-    lp2 = lp(fname2)
-    feature = dtw(lp1, lp2)
-    vector.append(feature)
-
-    #append label of fname2
-    #f = fname2.split(".")[0]
-    #print fname2
-    #l = gt[f] #label
-    #vector.append(l)
-    # img = pp(file) #feature vector
-    return vector
-
-
 #compare two custom distances via postal comparison
 #OUTPUT : 0 = same (=), + = greater (>), - = less (<)
 def compare(dist1,dist2):
-    distance = 0
-    #compare feature 1 : projection profile column
+    #EUCLIDIAN DISTANCE
+    sum1=0
+    for i in range(len(dist1[1])):
+        sum1+=math.pow(dist1[1][i], 2)
+    sum1=math.sqrt(sum1)
+    sum2=0
+    for i in range(len(dist2[1])):
+        sum2+=math.pow(dist2[1][i], 2)
+    sum2=math.sqrt(sum2)
 
-    for i in range(len(dist1[1])):#-1):#because last element is the label
-        if dist1[1][i] < dist2[1][i]:
-            distance -= 1
-        if dist1[1][i] > dist2[1][i]:
-            distance +=1
-    #print distance
-    if distance > 0:
+    if sum1>sum2:
         return 1
-    elif distance < 0:
+    elif sum1<sum2:
         return -1
     else:
         return 0
@@ -294,66 +211,6 @@ def compare(dist1,dist2):
 
 
 
-
-def loadSets(dirname, split):
-    '''
-    Seperate data into a training set and a test set
-    '''
-    trainingSet = []
-    testSet = []
-
-    for file in os.listdir(dirname):
-        if file.endswith(".png"):
-            f = file.split(".")[0]
-            # l = gt[f] #label
-            # img = pp(file) #feature vector
-            if random.random() < split:
-                # img.append(l)
-                trainingSet.append(file)
-            else:
-                testSet.append(file)
-    # print trainingSet
-    # print "\n\n"
-    # print testSet
-
-    return trainingSet, testSet
-
-
-def getNeighbors(trainingSet, testInstance, k=1):
-    dist_matrix = []
-    for i in range(len(trainingSet)):
-        dist_vec = distance(testInstance, trainingSet[i]) #distance vector (w/ several features)
-        dist_matrix.append([trainingSet[i][-1], dist_vec])
-
-    dist_matrix = sorted(dist_matrix, key=methodcaller('compare'))
-    # dist_matrix.sort(key=operator.itemgetter(1))
-    # print dist_matrix
-    neighbors = []
-    for i in range(k):
-        neighbors.append(dist_matrix[i][0])
-
-    return neighbors
-
-
-def getVotes(neighbors):
-    classVotes = {}
-    for i in range(len(neighbors)):
-        response = neighbors[i][-1]
-        if response in classVotes:
-            classVotes[response] += 1
-        else:
-            classVotes[response] = 1
-    sortedVotes = sorted(classVotes.iteritems(), key=operator.itemgetter(1), reverse=True)
-    return sortedVotes[0][0]
-
-
-def knn(trainingSet, testSet, k=1):
-    predictions = []
-    for i in range(len(testSet)):
-        neighbors = getNeighbors(trainingSet, testSet[i], k)
-        result = getVotes(neighbors)
-        predictions.append(result)
-    return True
 
 
 
@@ -369,7 +226,7 @@ def knn(trainingSet, testSet, k=1):
 kws = ["O-c-t-o-b-e-r", "s-o-o-n", "t-h-a-t"]
 kws_path = "./WashingtonDB/keywords/"
 # Words
-ws = ["274-05-02", "274-12-04", "273-33-05"]
+# ws = ["274-05-02", "274-12-04", "273-33-05"]
 ws_path = "WashingtonDB/words/"
 # Ground truth
 gt_file = "WashingtonDB/WashingtonDB.txt"
@@ -386,46 +243,116 @@ for line in cgt:
     gt[key] = label
 
 # print gt
-
-
-for kw in kws:
-    dissimilarity = {}
-    keyword = kws_path + kw + '.png'
-    array = []
+#PART 1 Parse all lines to obtain vector feature for each column
+features={}
+dict_path = './features.dict'
+#Check if dict exists
+if os.path.isfile(dict_path):
+    features = pickle.load(open(dict_path,'rb'))
+else:
     for path, subdirs, files in os.walk(ws_path):
         #checking files
         for file in files:
-            word = ws_path + file
-            dist = distance(keyword,word)
-            array.append([word,dist])
+            fname = ws_path+file
+            pp = pp_col(fname)
+            pp_trans = pp_col_transition(fname)
+            upperp = up(fname)
+            lowerp = lp(fname)
+            vector = [pp,pp_trans,upperp,lowerp]
+            features[str(file)]=vector
+    #dump dict
+    pickle.dump(features,open(dict_path,'wb'))
+
+
+for kw in kws:
+    fname = kws_path + kw + '.png'
+    kw_pp = pp_col(fname)
+    kw_pp_trans = pp_col_transition(fname)
+    kw_up = up(fname)
+    kw_lp = lp(fname)
+    array = []
+    for key in features:
+        w_pp = features[key][0]
+        w_pp_trans = features[key][1]
+        w_up = features[key][2]
+        w_lp = features[key][3]
+        dist_pp = dtw(kw_pp,w_pp)
+        dist_pp_trans = dtw(kw_pp_trans,w_pp_trans)
+        dist_lp = dtw(kw_lp,w_lp)
+        dist_up = dtw(kw_up,w_up)
+        dist=[dist_pp,dist_pp_trans,dist_up,dist_lp]
+        array.append([key,dist])
 
     #Sorting the array computed
     array.sort(compare)
-    print array[0]
-        #for w2 in ws:
-        #    if w1!=w2:
-        #        word2 = ws_path + w2 + '.png'
-        #        dist2 = distance(keyword,word2)
-        # dist = dtw(pp(keyword), pp(word))
-        #        if not( (w1+':'+w2 in dissimilarity) or (w2+':'+w1 in dissimilarity)):
-        #            dissimilarity[w1+':'+w2] = compare(dist1,dist2)
+    print "Ten first hits for keyword "+kw+"."
+    print "=========================="
+    print " "
+    match = []
+    nbr_hits = 10
+    while len(match) != nbr_hits:
+        elem = array.pop(0)
+        if not elem[0] in match:
+            print elem
+            print gt[elem[0].split('.', 1)[0]]
+            match.append(elem[0])
+#     print " "
+    precision, recall, fpr = [],[],[]
+    for threshold in range(0,10):
+        tp,fn,fp,tn = 0,0,0,0
+        for i in range(len(match)):
+            m = match[i].split('.', 1)[0]
+            # print m
+            if i <= threshold:
+                if gt[m] == kw:#match
+                    tp += 1
+                else:
+                    fp += 1
+            else:
+                if gt[m] == kw:
+                    tn += 1
+                else:
+                    fn += 1
+        try:
+            precision_str = float(tp)/(float(tp)+float(fp))
+        except:
+            precision_str = 0.0
+        try:
+            recall_str = float(tp)/(float(tp)+float(fn))
+        except:
+            recall_str = 0.0
+        try:
+            fpr_str = float(fp)/(float(fp)+float(tn))
+        except:
+            fpr_str = 0.0
+        print "T"+str(threshold)+" precision= "+str(precision_str)+" recall= "+str(recall_str)+" FPR= "+str(fpr_str)
+        precision.append(precision_str)
+        recall.append(recall_str)
+        fpr.append(fpr_str)
 
-    # ~rank list
-    #res = sorted(dissimilarity.items(), key=lambda x:x[1])
-    # res = sorted(dissimilarity, key=dissimilarity.get)
-    #tp, fn, fp, tn = 0,0,0,0 # false/true positive/negative
-    #for i in res:
-    #    if gt[i[0]] == kw:
-    #        print "ok"
-    #    else:
-    #        print "not ok"
-    #print res
+    plt.figure(1, figsize=(9, 4))
+    plt.subplot(121)
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.plot(recall, precision, 'r')
+    # plt.show()
 
+    eer_x,eer_y = 0,0
+    min_diff = 1000
+    for x in fpr:
+        for y in recall:
+            if abs(1-x-y) == 0:
+                # min_diff = abs(x-y)
+                eer_x,eer_y = 1-x,y
+    print "EER= " +str(eer_x)+ "," +str(eer_y)
 
-# set1, set2 = loadSets("WashingtonDB/words", 0.75)
+    plt.subplot(122)
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
+    plt.plot(fpr, recall, 'r', eer_x, eer_y, 'ko')
+    # plt.show()
+    # print " "
 
-# trainSet = [[2, 2, 2, 4], [4, 4, 4, 3]]
-# testInstance = [5, 5, 5, 1]
-# k = 1
-# neighbors = getNeighbors(trainSet, testInstance, 1)
-# print(neighbors)
+    plt.savefig(kw + "_res.png")
+    plt.show()
+    print " "
