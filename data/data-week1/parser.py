@@ -395,7 +395,7 @@ for kw in kws:
         avgp += precision[i]*d_recall
 
     print "EER= " +str(eer_x)+ "," +str(eer_y)
-    print "AVGP= " +str(avgp)
+    print "AP= " +str(avgp)
 
     plt.subplot(122)
     plt.xlabel('FPR')

@@ -8,6 +8,7 @@ import os
 import random
 import operator
 import pickle
+
 BLACK = 0
 WHITE = 255
 
@@ -180,7 +181,7 @@ def compare(dist1,dist2):
 kws = ["O-c-t-o-b-e-r", "s-o-o-n", "t-h-a-t"]
 kws_path = "./WashingtonDB/keywords/"
 # Words
-ws = ["274-05-02", "274-12-04", "273-33-05"]
+# ws = ["274-05-02", "274-12-04", "273-33-05"]
 ws_path = "WashingtonDB/_lines/"
 crop_path = "WashingtonDB/crops/"
 # Ground truth
@@ -197,7 +198,6 @@ for line in cgt:
     label = label.split('|')
     gt[key] = label
 
-# print gt
 
 #PART 1 Parse all lines to obtain vector feature for each column
 features={}
@@ -274,17 +274,20 @@ for kw in kws:
                     fn += 1
         try:
             precision_str = float(tp)/(float(tp)+float(fp))
+            precision_str = float("{0:.2f}".format(precision_str))
         except:
             #should not happend
             precision_str = 0.0
         try:
             #also known as True Positive Rate
             recall_str = float(tp)/(float(tp)+float(fn))
+            recall_str = float("{0:.2f}".format(recall_str))
         except:
             recall_str = 0.0
         try:
             #False Positive Rate
             fpr_str = float(fp)/(float(fp)+float(tn))
+            fpr_str = float("{0:.2f}".format(fpr_str))
         except:
             fpr_str = 0.0
         print "T"+str(threshold)+" precision= "+str(precision_str)+" recall (TPR)= "+str(recall_str)+" FPR= "+str(fpr_str)
@@ -301,14 +304,24 @@ for kw in kws:
     ax.set_autoscale_on(False)
     plt.plot(recall, precision, 'r')
 
-    eer_x,eer_y = 0,0
-    min_diff = 1000
+    eer_x,eer_y = 0.0,0.0
+    min_diff = 1000.0
     for i in range(len(fpr)):
-        if abs(fpr[i]-recall[i]) < min_diff:
-            min_diff = abs(fpr[i]-recall[i])
-            eer_x,eer_y = fpr[i],recall[i]
+        if fpr[i] > 0.0 and  fpr[i] < 1.0:
+            if abs(fpr[i]-recall[i]) < min_diff:
+                min_diff = abs(fpr[i]-recall[i])
+                eer_x,eer_y = fpr[i],recall[i]
+
+    avgp = 0
+    for i in range(len(precision)):
+        try:
+            d_recall = abs(recall[i] - recall[i-1])
+        except:
+            d_recall = recall[i]
+        avgp += precision[i]*d_recall
 
     print "EER= " +str(eer_x)+ "," +str(eer_y)
+    print "AP= " +str(avgp)
 
     plt.subplot(122)
     plt.xlabel('FPR')
@@ -321,3 +334,13 @@ for kw in kws:
     plt.savefig(kw + "_res_ppratio.png")
     plt.show()
     print " "
+
+
+    # Output complete ranked list
+    res_file = "WashingtonDB_"+kw+".txt"
+    if os.path.isfile(res_file) == False:
+        file = open(res_file, "w+")
+        for key in array:
+            k = key[0].split('.',1)[0]
+            file.write(k+"\n")
+        file.close
