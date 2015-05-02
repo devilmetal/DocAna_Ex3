@@ -322,11 +322,11 @@ for kw in kws:
 
     #Sorting the array computed
     array.sort(compare)
-    print "50 first hits for keyword "+kw+"."
+    nbr_hits = 100
+    print str(nbr_hits)+" first hits for keyword "+kw+"."
     print "=========================="
     print " "
     match = []
-    nbr_hits = 50
     while len(match) != nbr_hits:
         elem = array.pop(0)
         if not elem[0] in match:
@@ -335,7 +335,7 @@ for kw in kws:
             match.append(elem[0])
 
     precision, recall, fpr = [],[],[]
-    for threshold in range(0,50):
+    for threshold in range(0,nbr_hits):
         tp,fn,fp,tn = 0,0,0,0
         for i in range(len(match)):
             m = match[i].split('.', 1)[0]
@@ -353,16 +353,19 @@ for kw in kws:
         try:
             precision_str = float(tp)/(float(tp)+float(fp))
         except:
+            #should not happend
             precision_str = 0.0
         try:
+            #also known as True Positive Rate
             recall_str = float(tp)/(float(tp)+float(fn))
         except:
             recall_str = 0.0
         try:
+            #False Positive Rate
             fpr_str = float(fp)/(float(fp)+float(tn))
         except:
             fpr_str = 0.0
-        print "T"+str(threshold)+" precision= "+str(precision_str)+" recall= "+str(recall_str)+" FPR= "+str(fpr_str)
+        print "T"+str(threshold)+" precision= "+str(precision_str)+" recall (TPR)= "+str(recall_str)+" FPR= "+str(fpr_str)
         precision.append(precision_str)
         recall.append(recall_str)
         fpr.append(fpr_str)
@@ -371,6 +374,9 @@ for kw in kws:
     plt.subplot(121)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
+    plt.axis([0.0,1.0, 0.0,1.0])
+    ax = plt.gca()
+    ax.set_autoscale_on(False)
     plt.plot(recall, precision, 'r')
 
     eer_x,eer_y = 0,0
@@ -385,6 +391,9 @@ for kw in kws:
     plt.subplot(122)
     plt.xlabel('FPR')
     plt.ylabel('TPR')
+    plt.axis([0.0,1.0, 0.0,1.0])
+    ax = plt.gca()
+    ax.set_autoscale_on(False)
     plt.plot(fpr, recall, 'r', eer_x, eer_y, 'ko')
 
     plt.savefig(kw + "_res_ppratio.png")
