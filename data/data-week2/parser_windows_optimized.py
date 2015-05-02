@@ -11,29 +11,6 @@ import pickle
 BLACK = 0
 WHITE = 255
 
-def dtw(ts1, ts2, d = lambda x,y: abs(x-y)):
-    # Create cost matrix via broadcasting with large int
-    ts1, ts2 = np.array(ts1), np.array(ts2)
-    M, N = len(ts1), len(ts2)
-    cost = sys.maxint * np.ones((M, N))
-
-    # Initialize the first row and column
-    cost[0, 0] = 0
-    for i in xrange(1, M):
-        cost[i, 0] = cost[i-1, 0] + d(ts1[i], ts2[0])
-
-    for j in xrange(1, N):
-        cost[0, j] = 0
-
-    # Populate rest of cost matrix within window
-    for i in xrange(1, M):
-        for j in xrange(1, N):
-            choices = cost[i - 1, j - 1], cost[i, j-1], cost[i-1, j]
-            cost[i, j] = min(choices) + d(ts1[i], ts2[j])
-
-    # Return DTW distance given window
-    return cost[-1, -1]
-
 def extract(fname):
     im = Image.open(fname)
     pixels = im.load()
@@ -47,9 +24,10 @@ def extract(fname):
         img.append(line)
     return img
 
-# ---- FEATURES EXTRACTION /begin ---- #
 
-# Projection Profiling Columns Ratio
+
+# ---- FEATURES EXTRACTION /begin ---- #
+# Projection Profiling Columns
 def pp_col(fname):
     img = extract(fname)
     width, height = len(img), len(img[0])
@@ -62,9 +40,11 @@ def pp_col(fname):
                 sum_black += 1
         sum_black = sum_black/float(height)
         pp.append(sum_black)
+
     # normalize
     norm_pp = normalize(pp)
     return norm_pp
+
 
 # Projection Profiling Columns Transition B/W
 def pp_col_transition(fname):
@@ -83,90 +63,14 @@ def pp_col_transition(fname):
             else:
                 if img[i][j] == WHITE:
                     transitions += 1
-                    white = True
+                    white = False
 
         pp.append(transitions)
     # normalize
     norm_pp = normalize(pp)
     return norm_pp
 
-'''
-# Upper Profile
-def up(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    up = []
 
-    # for each column count the number of white pixels until 1st black pixel is encountered
-    # need to detect where the word begins and where it ends
-    begin, end = False, False
-    begin_i,end_i = 0,0
-    for i in range(width):
-        for j in range(height):
-            if img[i][j] == BLACK and not begin:
-                begin_i = i
-                begin = True
-                break
-    for i in reversed(range(width)):
-        for j in range(height):
-            if img[i][j] == BLACK and not end:
-                end_i = i
-                end = True
-                break
-
-    for i in range(begin_i,end_i):
-        sum_white = 0
-        j=0
-        while j < height and img[i][j] == WHITE:
-            j+=1
-            sum_white += 1
-
-        if sum_white == height: # no black pixel encountered => take same value as the last one introduced
-            sum_white = up[-1]
-
-        up.append(sum_white)
-
-    # normalize
-    norm_up = normalize(up)
-    return norm_up
-
-# Lower Profile
-def lp(fname):
-    img = extract(fname)
-    width, height = len(img), len(img[0])
-    lp = []
-    # for each column count the number of white pixels until 1st black pixel is encountered
-    # need to detect where the word begins and where it ends
-    begin, end = False, False
-    begin_i,end_i = 0,0
-    for i in range(width):
-        for j in reversed(range(height)):
-            if img[i][j] == BLACK and not begin:
-                begin_i = i
-                begin = True
-                break
-    for i in reversed(range(width)):
-        for j in reversed(range(height)):
-            if img[i][j] == BLACK and not end:
-                end_i = i
-                end = True
-                break
-    for i in range(begin_i,end_i):
-        sum_white = 0
-        j=height-1
-        while j >= 0 and img[i][j] == WHITE:
-            j-=1
-            sum_white += 1
-
-        if sum_white == height: # no black pixel encountered => take same value as the last one introduced
-            sum_white = lp[-1]
-
-        lp.append(sum_white)
-
-    # normalize
-    norm_up = normalize(lp)
-    return norm_up
-'''
 # Upper Profile
 def up(fname):
     img = extract(fname)
@@ -211,8 +115,43 @@ def normalize(x):
         x[i] = (x[i]-mi)/float(ma-mi)
 
     return x
+
 # ---- FEATURES EXTRACTION /end ---- #
 
+
+
+
+
+
+# ---- DISSIMILARITY COMPUTATION /begin ---- #
+# Source: http://nbviewer.ipython.org/github/markdregan/K-Nearest-Neighbors-with-Dynamic-Time-Warping/blob/master/K_Nearest_Neighbor_Dynamic_Time_Warping.ipynb
+# Dynamic Time Warping
+def dtw(ts1, ts2, d = lambda x,y: abs(x-y)):
+    # Create cost matrix via broadcasting with large int
+    ts1, ts2 = np.array(ts1), np.array(ts2)
+    M, N = len(ts1), len(ts2)
+    cost = sys.maxint * np.ones((M, N))
+
+    # Initialize the first row and column
+    cost[0, 0] = 0
+    for i in xrange(1, M):
+        cost[i, 0] = cost[i-1, 0] + d(ts1[i], ts2[0])
+
+    for j in xrange(1, N):
+        cost[0, j] = 0
+
+    # Populate rest of cost matrix within window
+    for i in xrange(1, M):
+        for j in xrange(1, N):
+            choices = cost[i - 1, j - 1], cost[i, j-1], cost[i-1, j]
+            cost[i, j] = min(choices) + d(ts1[i], ts2[j])
+
+    # Return DTW distance given window
+    return cost[-1, -1]
+
+
+#compare two custom distances via postal comparison
+#OUTPUT : 0 = same (=), + = greater (>), - = less (<)
 def compare(dist1,dist2):
     #EUCLIDIAN DISTANCE
     sum1=0
@@ -230,7 +169,7 @@ def compare(dist1,dist2):
         return -1
     else:
         return 0
-
+# ---- DISSIMILARITY COMPUTATION /end ---- #
 
 
 
@@ -282,7 +221,7 @@ else:
     pickle.dump(features,open(dict_path,'wb'))
 
 #PART2 PARSE THE WHOLE DICTIONARY VECTORS WITH A GIVEN KEYWORD FEATURE VECTOR
-windows = 1 # 30px width for the sliding windows
+#windows = 1 # 30px width for the sliding windows
 for kw in kws:
     fname = kws_path + kw + '.png'
     kw_pp = pp_col(fname)
@@ -302,68 +241,53 @@ for kw in kws:
         dist_up = dtw(kw_up,line_up)
         dist=[dist_pp,dist_pp_trans,dist_up,dist_lp]
         array.append([key,dist])
-        '''
-        width = len(features[key][0])
-        for i in range(width):
-            if i % windows == 0 and i+kw_width < width:
-                crop_pp = features[key][0][i:i+kw_width]
-                crop_pp_trans = features[key][1][i:i+kw_width]
-                crop_lp = features[key][2][i:i+kw_width]
-                crop_up = features[key][3][i:i+kw_width]
-                dist_pp = sum([abs(x-y) for x, y in zip(crop_pp, kw_pp)])/len(crop_pp)
-                dist_pp_trans = sum([abs(x-y) for x, y in zip(crop_pp_trans, kw_pp_trans)])/len(crop_pp_trans)
-                dist_lp = sum([abs(x-y) for x, y in zip(crop_lp, kw_lp)])/len(crop_lp)
-                dist_up = sum([abs(x-y) for x, y in zip(crop_up, kw_up)])/len(crop_up)
-                dist=[dist_pp,dist_pp_trans,dist_lp,dist_up]
-                array.append([key,dist])
-        '''
 
     #Sorting the array computed
     array.sort(compare)
-    print "50 first hits for keyword "+kw+"."
+    nbr_hits = 100
+    print str(nbr_hits)+" first hits for keyword "+kw+"."
     print "=========================="
     print " "
     match = []
-    nbr_hits = 50
     while len(match) != nbr_hits:
         elem = array.pop(0)
         if not elem[0] in match:
             print elem
+            print gt[elem[0].split('.', 1)[0]]
             match.append(elem[0])
-#     print " "
+
     precision, recall, fpr = [],[],[]
-    for threshold in range(0,50):
+    for threshold in range(0,nbr_hits):
         tp,fn,fp,tn = 0,0,0,0
         for i in range(len(match)):
             m = match[i].split('.', 1)[0]
+            # print m
             if i <= threshold:
-                seen = False
-                for word in gt[m]:
-                    if word == kw and not seen:#keyword appears on the checked line (count line only once)
-                        tp += 1
-                        seen = True
-                if not seen:#keyword is not on the checked line
+                if kw in gt[m]:#match
+                    tp += 1
+                else:
                     fp += 1
             else:
-                seen = False
-                for word in gt[m]:
-                    if word == kw and not seen:
-                        tn += 1
-                if not seen:
+                if kw in gt[m]:
+                    tn += 1
+                else:
                     fn += 1
         try:
             precision_str = float(tp)/(float(tp)+float(fp))
         except:
+            #should not happend
             precision_str = 0.0
         try:
+            #also known as True Positive Rate
             recall_str = float(tp)/(float(tp)+float(fn))
         except:
             recall_str = 0.0
         try:
+            #False Positive Rate
             fpr_str = float(fp)/(float(fp)+float(tn))
         except:
             fpr_str = 0.0
-        print "T"+str(threshold)+" precision= "+str(precision_str)+" recall= "+str(recall_str)+" FPR= "+str(fpr_str)
+        print "T"+str(threshold)+" precision= "+str(precision_str)+" recall (TPR)= "+str(recall_str)+" FPR= "+str(fpr_str)
         precision.append(precision_str)
         recall.append(recall_str)
         fpr.append(fpr_str)
@@ -372,6 +296,9 @@ for kw in kws:
     plt.subplot(121)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
+    plt.axis([0.0,1.0, 0.0,1.0])
+    ax = plt.gca()
+    ax.set_autoscale_on(False)
     plt.plot(recall, precision, 'r')
 
     eer_x,eer_y = 0,0
@@ -386,8 +313,11 @@ for kw in kws:
     plt.subplot(122)
     plt.xlabel('FPR')
     plt.ylabel('TPR')
+    plt.axis([0.0,1.0, 0.0,1.0])
+    ax = plt.gca()
+    ax.set_autoscale_on(False)
     plt.plot(fpr, recall, 'r', eer_x, eer_y, 'ko')
 
-    plt.savefig(kw + "_res.png")
+    plt.savefig(kw + "_res_ppratio.png")
     plt.show()
     print " "
