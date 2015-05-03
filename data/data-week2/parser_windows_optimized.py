@@ -269,9 +269,9 @@ for kw in kws:
                     fp += 1
             else:
                 if kw in gt[m]:
-                    tn += 1
-                else:
                     fn += 1
+                else:
+                    tn += 1
         try:
             precision_str = float(tp)/(float(tp)+float(fp))
             precision_str = float("{0:.2f}".format(precision_str))
@@ -307,18 +307,23 @@ for kw in kws:
     eer_x,eer_y = 0.0,0.0
     min_diff = 1000.0
     for i in range(len(fpr)):
-        if fpr[i] > 0.0 and  fpr[i] < 1.0:
-            if abs(fpr[i]-recall[i]) < min_diff:
-                min_diff = abs(fpr[i]-recall[i])
-                eer_x,eer_y = fpr[i],recall[i]
+        if abs(1-fpr[i]-recall[i]) < min_diff:
+            min_diff = abs(1-fpr[i]-recall[i])
+            eer_x,eer_y = fpr[i],recall[i]
+            # print "eer_x="+str(eer_x)+"   eer_y="+str(eer_y)
 
-    avgp = 0
+    avgp = 0.0
+    total_match = 0#count when it's a non-match
     for i in range(len(precision)):
         try:
             d_recall = abs(recall[i] - recall[i-1])
         except:
             d_recall = recall[i]
-        avgp += precision[i]*d_recall
+        if d_recall != 0:
+            avgp += precision[i]
+            total_match += 1
+
+    avgp = avgp/total_match
 
     print "EER= " +str(eer_x)+ "," +str(eer_y)
     print "AP= " +str(avgp)
