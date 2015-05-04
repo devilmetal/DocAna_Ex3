@@ -257,19 +257,19 @@ def compare(dist1,dist2):
 
 # Keywords
 
-#kws = ["O-c-t-o-b-e-r", "s-o-o-n", "t-h-a-t"]
-kws = ["A-r-t-v-s", "d-a-z", "G-r-a-l-s", "k-v-n-e-g-i-n-n-e"]
-#kws_path = "./WashingtonDB/keywords/"
-kws_path = "./ParzivalDB/keywords/"
+kws = ["O-c-t-o-b-e-r", "s-o-o-n", "t-h-a-t"]
+#kws = ["A-r-t-v-s", "d-a-z", "G-r-a-l-s", "k-v-n-e-g-i-n-n-e"]
+kws_path = "./WashingtonDB/keywords/"
+#kws_path = "./ParzivalDB/keywords/"
 
 # Words
 # ws = ["274-05-02", "274-12-04", "273-33-05"]
-#ws_path = "WashingtonDB/words/"
-ws_path = "ParzivalDB/words/"
+ws_path = "WashingtonDB/words/"
+#ws_path = "ParzivalDB/words/"
 
 # Ground truth
-#gt_file = "WashingtonDB/WashingtonDB.txt"
-gt_file = "ParzivalDB/ParzivalDB.txt"
+gt_file = "WashingtonDB/WashingtonDB.txt"
+#gt_file = "ParzivalDB/ParzivalDB.txt"
 gt = {}
 
 
